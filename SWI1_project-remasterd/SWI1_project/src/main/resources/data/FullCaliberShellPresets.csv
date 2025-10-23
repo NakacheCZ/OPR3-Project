@@ -1,0 +1,17 @@
+Name,Mass,Velocity,Angle,Diameter,Constant,ThicknessExponent,ScaleExponent,Range
+7.5cm KwK 42 (Panther) - Panzergranate 39/42,6.8,935,30,75,2000,1.15,0.1,0
+8.8cm KwK 36 (Tiger I) - Panzergranate 39,10.2,773,30,88,1950,1.4,0.1,0
+8.8cm KwK 42 (Tiger II) - Panzergranate 39/43,10.4,1000,30,88,1800,1.4,0.1,0
+12.8cm Pak 44 (Jagdtiger) - Panzergranate 43,28.3,950,30,128,1900,1.3,0.1,0
+7.5cm KwK 40 (Panzer IV) - Panzergranate 39,6.8,750,30,75,2000,1.45,0.1,0
+75mm gun M3 (M4 Sherman) - M61A1,6.8,620,30,75,2000,2,0.1,0
+76mm gun M1A2 (M18, M4, M10) - M62A1,7,790,30,76,2000,1.4,0.1,0
+90mm gun M3 (M36, M26) - M82,10.9,853,30,90,2050,1.35,0.1,0
+76mm F-34 (T-34) - BR-350,6.3,612,30,76,2600,1.4,0.1,0
+57mm ZiS-4 (T-34-57) - BR-271,3.14,990,30,57,2400,1.1,0.1,0
+85mm/L52 D-5T (T-34-85) - BR-365K,9.2,792,30,85,2200,1.4,0.1,0
+100mm D-10T (T-54, SU-100) - BR-412D,15.6,915,30,100,2000,1.25,0.1,0
+122mm D-25T (IS-2) - BR-412,25,800,30,122,2100,1.8,0.1,0
+76.2mm QF 17pdr (Sherman Firefly) - Shell Mk 3 APCBC,7.7,900,30,76.2,2080,1.225,0.1,0
+76.2mm QF 17pdr (Sherman Firefly) - Shot Mk 1 APDS,3.5,1200,30,38.1,2600,1.05,0.1,0
+57mm QF 6pdr L/50 (Churchill III) - Shell Mk 8 APC,2.86,884,30,57,1900,1.4,0.1,0

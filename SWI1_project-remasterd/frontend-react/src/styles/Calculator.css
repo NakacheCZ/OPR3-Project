@@ -1,0 +1,120 @@
+.calculator-form {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.calculator-title {
+  color: #2c3e50;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #3498db;
+  position: relative;
+}
+
+.calculator-title::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 2px;
+  background-color: #e74c3c;
+}
+
+.form-control-lg {
+  border-radius: 10px;
+  border: 2px solid #e9ecef;
+  padding: 0.75rem 1rem;
+  transition: all 0.3s ease;
+  color: #2c3e50;
+  font-weight: 500;
+  background-color: #ffffff;
+}
+
+.form-control-lg:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+  color: #2c3e50;
+}
+
+.form-control-lg::placeholder {
+  color: #95a5a6;
+  opacity: 0.7;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #34495e;
+  margin-bottom: 0.5rem;
+}
+
+.parameter-group {
+  background: rgba(52, 152, 219, 0.05);
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+.calculate-btn {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  border: none;
+  padding: 1rem 2rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+}
+
+.calculate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+}
+
+.input-icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #95a5a6;
+}
+
+.form-floating {
+  position: relative;
+}
+
+.parameter-badge {
+  background: #3498db;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  margin-left: 0.5rem;
+}
+
+.info-tooltip {
+  color: #95a5a6;
+  margin-left: 0.5rem;
+  cursor: help;
+}
+
+/* Animace pro formulář */
+.form-appear {
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+} 

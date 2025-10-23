@@ -1,0 +1,173 @@
+:root {
+  --background-color: #040b14;
+  --default-color: #ffffff;
+  --heading-color: #ffffff;
+  --surface-color: #151f2b;
+  --contrast-color: #ffffff;
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--default-color);
+  font-family: "Roboto", sans-serif;
+}
+
+.calculator-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: var(--surface-color);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  color: var(--default-color);
+}
+
+.form-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: var(--background-color);
+  border-radius: 6px;
+}
+
+.result-section {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: var(--surface-color);
+  border-radius: 6px;
+}
+
+.history-section {
+  margin-top: 2rem;
+}
+
+.history-table {
+  margin-top: 1rem;
+}
+
+.btn-calculate {
+  background-color: #007bff;
+  color: var(--contrast-color);
+  padding: 0.5rem 2rem;
+  border: none;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.btn-calculate:hover {
+  background-color: #0056b3;
+}
+
+.nav-tabs .nav-link {
+  color: var(--default-color);
+}
+
+.nav-tabs .nav-link.active {
+  font-weight: bold;
+}
+
+.form-label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--default-color);
+}
+
+.App {
+  text-align: center;
+  padding: 20px;
+}
+
+.App-header {
+  margin-bottom: 2rem;
+}
+
+.App-header h1 {
+  color: var(--heading-color);
+  font-size: 2rem;
+}
+
+.button-row,
+.button-row-single {
+  display: flex;
+  justify-content: center;
+}
+
+.button-row {
+  gap: 80px;
+  margin-bottom: 60px;
+}
+
+.button-row-single {
+  margin-top: 60px;
+}
+
+.ammo-button {
+  width: 220px;
+  height: 160px;
+  background-color: #2d3748;
+  opacity: 0.8;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  border: none;
+  cursor: pointer;
+  color: var(--contrast-color);
+}
+
+.ammo-button:hover {
+  background-color: #4a5568;
+}
+
+.ammo-button img {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 12px;
+  object-fit: contain;
+}
+
+.ammo-button span {
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.header-section {
+  background-color: #1a202c;
+  padding: 32px 48px;
+  border-radius: 18px;
+  margin-bottom: 48px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-section h1 {
+  margin: 0;
+  color: #fff;
+  font-size: 2.5rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+/* App.css */
+.formula-img {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dark-img {
+    display: block;
+  }
+}
+
+@media (prefers-color-scheme: light), (prefers-color-scheme: no-preference) {
+  .light-img {
+    display: block;
+  }
+}
