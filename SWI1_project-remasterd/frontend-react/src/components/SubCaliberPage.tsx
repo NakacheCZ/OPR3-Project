@@ -119,7 +119,31 @@ export default function SubCaliberPage() {
         }
     };
 
+    const validateFields = () => {
+        const missingFields = [];
+        if (!totalLength) missingFields.push('Total Length');
+        if (!diameter) missingFields.push('Diameter');
+        if (!density) missingFields.push('Density');
+        if (!hardness) missingFields.push('Brinell Hardness');
+        if (!velocity) missingFields.push('Impact Velocity');
+        if (!targetDensity) missingFields.push('Target Density');
+        if (!targetHardness) missingFields.push('Target Hardness');
+        if (!angle) missingFields.push('Angle');
+        if (!range) missingFields.push('Range');
+        if (!material) missingFields.push('Material');
+
+        if (missingFields.length > 0) {
+            setError(`Please fill in the following fields: ${missingFields.join(', ')}`);
+            return false;
+        }
+        setError('');
+        return true;
+    };
+
     const handleCalculate = async () => {
+        if (!validateFields()) {
+            return;
+        }
         setError('');
         setFinalResult('');
         setResults([]);
@@ -130,10 +154,10 @@ export default function SubCaliberPage() {
             const tableResults = [];
 
             for (let index = 0; index < ranges.length; index++) {
-                const range = ranges[index];
-                const row: any = { id: index, range };
+                const rangeValue = ranges[index];
+                const row: any = { id: index, range: rangeValue };
                 
-                for (const angle of angles) {
+                for (const angleValue of angles) {
                     const data = await api.post<any>('http://localhost:8080/api/calculator/sub-caliber', {
                             totalLength: parseFloat(totalLength),
                             diameter: parseFloat(diameter),
@@ -142,19 +166,18 @@ export default function SubCaliberPage() {
                             velocity: parseFloat(velocity),
                             densityTarget: parseFloat(targetDensity),
                             hardnessTarget: parseFloat(targetHardness),
-                            angle: angle * Math.PI / 180,
-                            range: range,
+                            angle: angleValue * Math.PI / 180,
+                            range: rangeValue,
                             material: material
                         });
 
-                    row[`result${angle}`] = data.result?.toFixed(2) ?? '';
+                    row[`result${angleValue}`] = data.result?.toFixed(2) ?? '';
                 }
                 tableResults.push(row);
             }
 
             setResults(tableResults);
 
-            // Výpočet pro aktuálně zadané hodnoty
             const currentData = await api.post<any>('http://localhost:8080/api/calculator/sub-caliber', {
                     totalLength: parseFloat(totalLength),
                     diameter: parseFloat(diameter),
@@ -170,7 +193,6 @@ export default function SubCaliberPage() {
 
             setFinalResult(currentData.result?.toFixed(2) ?? '');
 
-            // Uložení do historie
             await saveCalculationHistory({
                 timestamp: new Date().toISOString(),
                 parameters: JSON.stringify({
@@ -191,7 +213,7 @@ export default function SubCaliberPage() {
 
             await fetchHistory();
         } catch (err: any) {
-            setError(err.message || 'Došlo k chybě');
+            setError(err.message || 'An error occurred during calculation.');
         }
     };
 

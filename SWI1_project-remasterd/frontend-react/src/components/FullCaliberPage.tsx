@@ -88,6 +88,25 @@ export default function FullCaliberPage() {
     { field: 'result60', headerName: '60°', flex: 1 },
   ];
 
+  const validateFields = () => {
+    const missingFields = [];
+    if (!mass) missingFields.push('Mass');
+    if (!velocity) missingFields.push('Velocity');
+    if (!diameter) missingFields.push('Diameter');
+    if (!angle) missingFields.push('Angle');
+    if (!range) missingFields.push('Range');
+    if (!constant) missingFields.push('Material Coefficient');
+    if (!thicknessExponent) missingFields.push('Material Exponent');
+    if (!scaleExponent) missingFields.push('Resistance Coefficient');
+
+    if (missingFields.length > 0) {
+      setError(`Please fill in the following fields: ${missingFields.join(', ')}`);
+      return false;
+    }
+    setError('');
+    return true;
+  };
+
   const handleCalculate = async () => {
   setResults([]);
   try {
@@ -96,37 +115,40 @@ export default function FullCaliberPage() {
     const tableResults: FullCaliberResult[] = [];
 
     for (let index = 0; index < ranges.length; index++) {
-      const range = ranges[index];
-      const row: any = { id: index, range };
-      for (const angle of angles) {
+      const rangeValue = ranges[index];
+      const row: any = { id: index, range: rangeValue };
+      for (const angleValue of angles) {
         const data = await api.post<any>('http://localhost:8080/api/calculator/full-caliber', {
             mass: parseFloat(mass),
             velocity: parseFloat(velocity),
             diameter: parseFloat(diameter),
-            range,
-            angle: angle * Math.PI / 180,
+            range: rangeValue,
+            angle: angleValue * Math.PI / 180,
             materialCoefficient: parseFloat(constant),
             materialExponent: parseFloat(thicknessExponent),
             resistanceCoefficient: parseFloat(scaleExponent),
           });
-        row[`result${angle}`] = data.result?.toFixed(2) ?? '';
+        row[`result${angleValue}`] = data.result?.toFixed(2) ?? '';
       }
       tableResults.push(row);
     }
 
     setResults(tableResults);
   } catch (err: any) {
-    setError(err.message || 'Došlo k chybě');
+    setError(err.message || 'An error occurred during calculation.');
   }
 };
 
-  const handleIndividualCalculate = async () => {
+  const handleCalculateBoth = async () => {
+    if (!validateFields()) {
+      return;
+    }
     try {
-      const parsedAngle = parseFloat(angle); // Převeďte `angle` na číslo
+      const parsedAngle = parseFloat(angle);
       const data = await api.post<any>('http://localhost:8080/api/calculator/full-caliber', {
           mass: parseFloat(mass),
           velocity: parseFloat(velocity),
-          angle: parsedAngle * Math.PI / 180, // Použijte převedený úhel
+          angle: parsedAngle * Math.PI / 180,
           diameter: parseFloat(diameter),
           materialCoefficient: parseFloat(constant),
           materialExponent: parseFloat(thicknessExponent),
@@ -134,77 +156,38 @@ export default function FullCaliberPage() {
           range: parseFloat(range),
         });
 
+      await handleCalculate();
       setFinalResult(data.result?.toFixed(2) ?? '');
 
-      // Aktualizace seznamu historie
+      await saveCalculationHistory({
+        timestamp: new Date().toISOString(),
+        parameters: JSON.stringify({
+          mass,
+          velocity,
+          angle,
+          diameter,
+          constant,
+          thicknessExponent,
+          scaleExponent,
+          range,
+        }),
+        calculationType: 'Full Caliber',
+        result: data.result,
+      });
+
+      setRefreshKey(prev => prev + 1);
       await fetchHistory();
     } catch (err: any) {
-      setError(err.message || 'Došlo k chybě');
+      setError(err.message || 'An error occurred during calculation.');
     }
   };
 
-  const [isLoading, setIsLoading] = useState(false);
-
   const fetchHistory = async () => {
-    setIsLoading(true); // Zobrazit indikátor načítání
     try {
       const data = await api.get<CalculationHistory[]>('http://localhost:8080/api/calculator/calculation-history');
       setHistory(data);
     } catch (err: any) {
-      setError(err.message || 'Došlo k chybě při načítání historie');
-    } finally {
-      setIsLoading(false); // Skrytí indikátoru načítání
-    }
-  };
-
-  useEffect(() => {
-    fetchHistory(); // Automatické načtení historie při načtení komponenty
-  }, []);
-
-  const handleCalculateBoth = async () => {
-    try {
-      const parsedAngle = parseFloat(angle); // Převeďte `angle` na číslo
-      const data = await api.post<any>('http://localhost:8080/api/calculator/full-caliber', {
-          mass: parseFloat(mass),
-          velocity: parseFloat(velocity),
-          angle: parsedAngle * Math.PI / 180, // Převod na radiány
-          diameter: parseFloat(diameter),
-          materialCoefficient: parseFloat(constant),
-          materialExponent: parseFloat(thicknessExponent),
-          resistanceCoefficient: parseFloat(scaleExponent),
-          range: parseFloat(range),
-        });
-
-      await handleCalculate(); // Also fill the full-angle results table
-      setFinalResult(data.result?.toFixed(2) ?? '');
-
-
-
-// Uložení historie
-await saveCalculationHistory({
-  timestamp: new Date().toISOString(),
-  parameters: JSON.stringify({
-    mass,
-    velocity,
-    angle,
-    diameter,
-    constant,
-    thicknessExponent,
-    scaleExponent,
-    range,
-  }),
-  calculationType: 'Full Caliber',
-  result: data.result,
-});
-
-// Zvyšení klíče pro refresh footeru
-setRefreshKey(prev => prev + 1);
-
-
-      // Aktualizace seznamu historie
-      await fetchHistory();
-    } catch (err: any) {
-      setError(err.message || 'Došlo k chybě');
+      console.error(err.message);
     }
   };
 
@@ -212,15 +195,10 @@ setRefreshKey(prev => prev + 1);
     try {
       await api.post('http://localhost:8080/api/calculator/save-calculation-history', history);
     } catch (err: any) {
-      setError(err.message || 'Došlo k chybě při ukládání historie');
+      setError(err.message || 'An error occurred while saving history.');
     }
   };
 
-
-
-
-
-  // When preset changes, fill the form
   const handleShellPresetChange = (event: SelectChangeEvent) => {
     const presetId = event.target.value;
     setShellPreset(presetId);
@@ -259,60 +237,68 @@ setRefreshKey(prev => prev + 1);
           </Select>
           <TextField
             label="Mass (kg)"
+            type="number"
             value={mass}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMass(e.target.value)}
             fullWidth
           />
           <TextField
             label="Velocity (m/s)"
+            type="number"
             value={velocity}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVelocity(e.target.value)}
             fullWidth
           />
           <TextField
             label="Diameter (mm)"
+            type="number"
             value={diameter}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDiameter(e.target.value)}
             fullWidth
           />
           <TextField
             label="Angle (°)"
+            type="number"
             value={angle}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAngle(e.target.value)}
             fullWidth
           />
           <TextField
             label="Range (m)"
+            type="number"
             value={range}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRange(e.target.value)}
             fullWidth
           />
           <TextField
             label="Material Coefficient"
+            type="number"
             value={constant}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConstant(e.target.value)}
             fullWidth
           />
           <TextField
             label="Material Exponent"
+            type="number"
             value={thicknessExponent}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setThicknessExponent(e.target.value)}
             fullWidth
           />
           <TextField
             label="Resistance Coefficient"
+            type="number"
             value={scaleExponent}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setScaleExponent(e.target.value)}
             fullWidth
           />
           <Button
-  ref={calculateButtonRef}
-  variant="contained"
-  color="primary"
-  onClick={handleCalculateBoth}
->
-  Calculate
-</Button>
+            ref={calculateButtonRef}
+            variant="contained"
+            color="primary"
+            onClick={handleCalculateBoth}
+          >
+            Calculate
+          </Button>
         </Stack>
 
         <Stack flex={1}>

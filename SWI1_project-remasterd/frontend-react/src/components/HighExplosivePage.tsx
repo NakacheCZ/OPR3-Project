@@ -14,9 +14,8 @@ interface HePreset {
     explosiveType: {
         id: number;
         name: string;
-        energyFactor?: number;  // volitelné pole, pokud ho API vrací
+        energyFactor?: number;
     };
-
 }
 
 interface ExplosiveType {
@@ -35,7 +34,7 @@ interface HeatPresetResponse {
     explosiveType: {
         id: number;
         name: string;
-        energyFactor?: number;  // volitelné pole, pokud ho API vrací
+        energyFactor?: number;
     };
 }
 
@@ -43,7 +42,6 @@ export default function HighExplosivePage() {
     const navigate = useNavigate();
 
     // HEAT states
-    //const [heatPresets, setHeatPresets] = useState<HeatPreset[]>([]);
     const [heatPresets, setHeatPresets] = useState<HeatPresetResponse[]>([]);
     const [selectedHeatPreset, setSelectedHeatPreset] = useState('');
     const [explosiveTypes, setExplosiveTypes] = useState<ExplosiveType[]>([]);
@@ -54,7 +52,7 @@ export default function HighExplosivePage() {
     const [coefficient, setCoefficient] = useState('');
     const [efficiency, setEfficiency] = useState('');
     const [heatResults, setHeatResults] = useState<any[]>([]);
-    const [heatPenetrationResult, setHeatPenetrationResult] = useState<string>(''); // Add this state
+    const [heatPenetrationResult, setHeatPenetrationResult] = useState<string>('');
 
     // HE states
     const [hePresets, setHePresets] = useState<HePreset[]>([]);
@@ -65,11 +63,7 @@ export default function HighExplosivePage() {
 
     // Common states
     const [error, setError] = useState<string>('');
-
-    // Přidání state pro HEAT overpressure
     const [heatOverpressure, setHeatOverpressure] = useState<string>('');
-
-    // 1. Add state for history
     const [history, setHistory] = useState<any[]>([]);
 
     useEffect(() => {
@@ -90,7 +84,6 @@ export default function HighExplosivePage() {
             .catch(() => setHePresets([]));
     }, []);
 
-    // 3. Fetch history on mount
     useEffect(() => {
         fetchHistory();
     }, []);
@@ -102,31 +95,22 @@ export default function HighExplosivePage() {
         { field: 'result60', headerName: '60°', flex: 1 },
     ];
 
-const handleHeatPresetChange = (event: SelectChangeEvent) => {
-    const presetId = event.target.value;
-    setSelectedHeatPreset(presetId);
-    const preset = heatPresets.find(p => String(p.id) === String(presetId));
-    if (preset) {
-        console.log('Loading preset:', preset);
-        setExplosiveMass(String(preset.explosiveMass));
-        setDiameter(String(preset.diameter));
-        setAngle("0");
-        setCoefficient(
-            preset.coefficient !== undefined && preset.coefficient !== null
-                ? String(preset.coefficient)
-                : ''
-        );
-        setEfficiency(String(preset.efficiency));
-        
-        // Nastavíme ID typu výbušniny
-        const explosiveTypeValue = typeof preset.explosiveType === 'object' 
-            ? String(preset.explosiveType.id)
-            : String(preset.explosiveType);
-        setHeatExplosiveType(explosiveTypeValue);
-    }
-};
-
-
+    const handleHeatPresetChange = (event: SelectChangeEvent) => {
+        const presetId = event.target.value;
+        setSelectedHeatPreset(presetId);
+        const preset = heatPresets.find(p => String(p.id) === String(presetId));
+        if (preset) {
+            setExplosiveMass(String(preset.explosiveMass));
+            setDiameter(String(preset.diameter));
+            setAngle("0");
+            setCoefficient(String(preset.coefficient ?? ''));
+            setEfficiency(String(preset.efficiency));
+            const explosiveTypeValue = typeof preset.explosiveType === 'object' 
+                ? String(preset.explosiveType.id)
+                : String(preset.explosiveType);
+            setHeatExplosiveType(explosiveTypeValue);
+        }
+    };
 
     const handleHePresetChange = (event: SelectChangeEvent) => {
         const presetId = event.target.value;
@@ -134,7 +118,6 @@ const handleHeatPresetChange = (event: SelectChangeEvent) => {
         const preset = hePresets.find(p => String(p.id) === String(presetId));
         if (preset) {
             setHeExplosiveMass(String(preset.explosiveMass));
-            // Nastavíme ID typu výbušniny místo názvu
             const explosiveTypeValue = typeof preset.explosiveType === 'object'
                 ? String(preset.explosiveType.id)
                 : String(preset.explosiveType);
@@ -142,167 +125,137 @@ const handleHeatPresetChange = (event: SelectChangeEvent) => {
         }
     };
 
+    const validateHeatFields = () => {
+        const missingFields = [];
+        if (!explosiveMass) missingFields.push('Explosive Mass');
+        if (!diameter) missingFields.push('Diameter');
+        if (!angle) missingFields.push('Angle of Impact');
+        if (!coefficient) missingFields.push('Warhead Coefficient');
+        if (!efficiency) missingFields.push('Efficiency');
+        if (!heatExplosiveType) missingFields.push('Explosive Type');
+
+        if (missingFields.length > 0) {
+            setError(`Please fill in the following HEAT fields: ${missingFields.join(', ')}`);
+            return false;
+        }
+        setError('');
+        return true;
+    };
+
+    const validateHeFields = () => {
+        const missingFields = [];
+        if (!heExplosiveMass) missingFields.push('Explosive Mass');
+        if (!heExplosiveType) missingFields.push('Explosive Type');
+
+        if (missingFields.length > 0) {
+            setError(`Please fill in the following HE fields: ${missingFields.join(', ')}`);
+            return false;
+        }
+        setError('');
+        return true;
+    };
 
     const handleHeatCalculate = async () => {
-    setError('');
-    setHeatResults([]);
-    setHeatPenetrationResult('');
-    setHeatOverpressure('');
-    try {
-        // Table of results for various efficiencies and angles
-        const efficiencies = [Number(efficiency),100, 90, 80, 70, 60, 50];
-        const angles = [0, 30, 60];
-        const tableResults: any[] = [];
+        if (!validateHeatFields()) {
+            return;
+        }
+        setError('');
+        setHeatResults([]);
+        setHeatPenetrationResult('');
+        setHeatOverpressure('');
+        try {
+            const efficiencies = [Number(efficiency), 100, 90, 80, 70, 60, 50];
+            const angles = [0, 30, 60];
+            const tableResults: any[] = [];
 
-        for (let i = 0; i < efficiencies.length; i++) {
-            const efficiencyVal = efficiencies[i];
-            const row: any = { id: i, efficiency: efficiencyVal };
-            for (const angleVal of angles) {
-                const data = await api.post<any>('http://localhost:8080/api/calculator/heat', {
+            for (let i = 0; i < efficiencies.length; i++) {
+                const efficiencyVal = efficiencies[i];
+                const row: any = { id: i, efficiency: efficiencyVal };
+                for (const angleVal of angles) {
+                    const data = await api.post<any>('http://localhost:8080/api/calculator/heat', {
                         explosiveMass: Number(explosiveMass),
                         diameter: Number(diameter),
-                        angleOfImpact: Number(angleVal) * Math.PI / 180, // <-- FIXED
+                        angleOfImpact: Number(angleVal) * Math.PI / 180,
                         coefficient: Number(coefficient),
                         efficiency: efficiencyVal,
                         explosiveType: heatExplosiveType
                     });
-
-                row[`result${angleVal}`] = typeof data.result === 'number'
-                    ? data.result.toFixed(2)
-                    : data.result
-                        ? String(data.result)
-                        : '';
+                    row[`result${angleVal}`] = data.result?.toFixed(2) ?? '';
+                }
+                tableResults.push(row);
             }
-            tableResults.push(row);
-        }
-        setHeatResults(tableResults);
+            setHeatResults(tableResults);
 
-        // Main result for current input
-        const currentData = await api.post<any>('http://localhost:8080/api/calculator/heat', {
+            const currentData = await api.post<any>('http://localhost:8080/api/calculator/heat', {
                 explosiveMass: Number(explosiveMass),
                 diameter: Number(diameter),
-                angleOfImpact: Number(angle), // <-- FIXED
+                angleOfImpact: Number(angle),
                 coefficient: Number(coefficient),
                 efficiency: Number(efficiency),
                 explosiveType: heatExplosiveType
             });
+            setHeatPenetrationResult(currentData.result?.toFixed(2) ?? '');
 
-        setHeatPenetrationResult(
-            typeof currentData.result === 'number'
-                ? currentData.result.toFixed(2)
-                : currentData.result
-                    ? String(currentData.result)
-                    : ''
-        );
-
-        const explosiveTypeName = explosiveTypes.find(t => String(t.id) === String(heatExplosiveType))?.name || '';
-
-        // Overpressure for current input
-        const overpressureData = await api.post<any>('http://localhost:8080/api/calculator/overpressure', {
+            const explosiveTypeName = explosiveTypes.find(t => String(t.id) === String(heatExplosiveType))?.name || '';
+            const overpressureData = await api.post<any>('http://localhost:8080/api/calculator/overpressure', {
                 explosiveMass: Number(explosiveMass),
-                explosiveType: explosiveTypeName  // posíláme název výbušniny
+                explosiveType: explosiveTypeName
             });
+            setHeatOverpressure(overpressureData.result?.toFixed(2) ?? '');
 
-
-
-        setHeatOverpressure(
-            typeof overpressureData.result === 'number'
-                ? overpressureData.result.toFixed(2)
-                : overpressureData.result
-                    ? String(overpressureData.result)
-                    : ''
-        );
-        // Save HEAT overpressure to history
-        await api.post('http://localhost:8080/api/calculator/save-calculation-history', {
+            await api.post('http://localhost:8080/api/calculator/save-calculation-history', {
                 timestamp: new Date().toISOString(),
-                parameters: JSON.stringify({
-                    explosiveMass,
-                    diameter,
-                    angleOfImpact: angle,
-                    coefficient,
-                    efficiency,
-                    explosiveType: heatExplosiveType
-                }),
-                calculationType: 'HEAT Overpressure',
-                result: overpressureData.result
-            });
-        fetchHistory(); // <-- add this after each save
-
-        // Save calculation to history
-        await api.post('http://localhost:8080/api/calculator/save-calculation-history', {
-                timestamp: new Date().toISOString(),
-                parameters: JSON.stringify({
-                    explosiveMass,
-                    diameter,
-                    angleOfImpact: angle, // <-- FIXED
-                    coefficient,
-                    efficiency,
-                    explosiveType: heatExplosiveType
-                }),
+                parameters: JSON.stringify({ explosiveMass, diameter, angleOfImpact: angle, coefficient, efficiency, explosiveType: heatExplosiveType }),
                 calculationType: 'HEAT Penetration',
                 result: currentData.result
             });
-        fetchHistory(); // <-- add this after each save
-
-    } catch (error: any) {
-        setError(error.message || 'Chyba při HEAT výpočtu');
-    }
-};
-
-const handleHeCalculate = async () => {
-    try {
-        const explosiveTypeName = explosiveTypes.find(t => String(t.id) === String(heExplosiveType))?.name || '';
-
-        const requestData = {
-            explosiveType: explosiveTypeName,  // posíláme název výbušniny
-            explosiveMass: Number(heExplosiveMass)
-        };
-
-
-        console.log('Odesílání HE požadavku:', requestData);
-
-        const data = await api.post<any>('http://localhost:8080/api/calculator/he', requestData);
-
-        setHeResult(
-            typeof data.result === 'number'
-                ? data.result.toFixed(2) // Zaokrouhlení na 2 desetinná místa
-                : data.result
-                    ? String(data.result)
-                    : ''
-        );
-
-        // Save HE overpressure to history
-        await api.post('http://localhost:8080/api/calculator/save-calculation-history', {
+            await api.post('http://localhost:8080/api/calculator/save-calculation-history', {
                 timestamp: new Date().toISOString(),
-                parameters: JSON.stringify({
-                    explosiveMass: heExplosiveMass,
-                    explosiveType: heExplosiveType
-                }),
+                parameters: JSON.stringify({ explosiveMass, explosiveType: heatExplosiveType }),
+                calculationType: 'HEAT Overpressure',
+                result: overpressureData.result
+            });
+            fetchHistory();
+        } catch (error: any) {
+            setError(error.message || 'An error occurred during HEAT calculation.');
+        }
+    };
+
+    const handleHeCalculate = async () => {
+        if (!validateHeFields()) {
+            return;
+        }
+        try {
+            const explosiveTypeName = explosiveTypes.find(t => String(t.id) === String(heExplosiveType))?.name || '';
+            const requestData = { explosiveType: explosiveTypeName, explosiveMass: Number(heExplosiveMass) };
+            const data = await api.post<any>('http://localhost:8080/api/calculator/he', requestData);
+            setHeResult(data.result?.toFixed(2) ?? '');
+
+            await api.post('http://localhost:8080/api/calculator/save-calculation-history', {
+                timestamp: new Date().toISOString(),
+                parameters: JSON.stringify({ explosiveMass: heExplosiveMass, explosiveType: heExplosiveType }),
                 calculationType: 'HE Overpressure',
                 result: data.result
             });
-        fetchHistory(); // <-- add this after each save
-    } catch (error) {
-        console.error('Chyba při HE výpočtu:', error);
-    }
-};
+            fetchHistory();
+        } catch (error: any) {
+            setError(error.message || 'An error occurred during HE calculation.');
+        }
+    };
 
-    // 2. Add fetchHistory function
     const fetchHistory = async () => {
         try {
             const data = await api.get<any[]>('http://localhost:8080/api/calculator/calculation-history');
             setHistory(data);
         } catch (err) {
-            console.error('Chyba při načítání historie');
+            console.error('Error fetching history');
         }
     };
 
     return (
         <>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={4} alignItems="stretch" width="100%">
-                {/* Levá strana - formuláře zůstává stejná */}
                 <Stack spacing={4} flex={1}>
-                    {/* HEAT sekce */}
                     <Stack spacing={2}>
                         <Typography variant="h5">HEAT Calculations</Typography>
                         <Select
@@ -329,54 +282,18 @@ const handleHeCalculate = async () => {
                                 <MenuItem key={type.id} value={type.id}>{type.name}</MenuItem>
                             ))}
                         </Select>
-                        <TextField
-                            label="Explosive Mass (kg)"
-                            value={explosiveMass}
-                            onChange={(e) => setExplosiveMass(e.target.value)}
-                            fullWidth
-                            type="number"
-                        />
-                        <TextField
-                            label="Diameter (mm)"
-                            value={diameter}
-                            onChange={(e) => setDiameter(e.target.value)}
-                            fullWidth
-                            type="number"
-                        />
-                        <TextField
-                            label="Angle of Impact (degrees)"
-                            value={angle}
-                            onChange={(e) => setAngle(e.target.value)}
-                            fullWidth
-                            type="number"
-                        />
-                        <TextField
-                            label="Warhead Coefficient"
-                            value={coefficient}
-                            onChange={(e) => setCoefficient(e.target.value)}
-                            fullWidth
-                            type="number"
-                        />
-                        <TextField
-                            label="Efficiency (%)"
-                            value={efficiency}
-                            onChange={(e) => setEfficiency(e.target.value)}
-                            fullWidth
-                            type="number"
-                        />
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleHeatCalculate}
-                            fullWidth
-                        >
+                        <TextField label="Explosive Mass (kg)" value={explosiveMass} onChange={(e) => setExplosiveMass(e.target.value)} fullWidth type="number" />
+                        <TextField label="Diameter (mm)" value={diameter} onChange={(e) => setDiameter(e.target.value)} fullWidth type="number" />
+                        <TextField label="Angle of Impact (degrees)" value={angle} onChange={(e) => setAngle(e.target.value)} fullWidth type="number" />
+                        <TextField label="Warhead Coefficient" value={coefficient} onChange={(e) => setCoefficient(e.target.value)} fullWidth type="number" />
+                        <TextField label="Efficiency (%)" value={efficiency} onChange={(e) => setEfficiency(e.target.value)} fullWidth type="number" />
+                        <Button variant="contained" color="primary" onClick={handleHeatCalculate} fullWidth>
                             Calculate HEAT
                         </Button>
                     </Stack>
 
                     <Divider sx={{ my: 4, bgcolor: 'grey.500' }} />
 
-                    {/* HE sekce */}
                     <Stack spacing={2}>
                         <Typography variant="h5">HE Calculations</Typography>
                         <Select
@@ -403,77 +320,30 @@ const handleHeCalculate = async () => {
                                 <MenuItem key={type.id} value={type.id}>{type.name}</MenuItem>
                             ))}
                         </Select>
-                        <TextField
-                            label="Explosive Mass (kg)"
-                            value={heExplosiveMass}
-                            onChange={(e) => setHeExplosiveMass(e.target.value)}
-                            fullWidth
-                            type="number"
-                        />
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleHeCalculate}
-                            fullWidth
-                        >
+                        <TextField label="Explosive Mass (kg)" value={heExplosiveMass} onChange={(e) => setHeExplosiveMass(e.target.value)} fullWidth type="number" />
+                        <Button variant="contained" color="primary" onClick={handleHeCalculate} fullWidth>
                             Calculate HE
                         </Button>
                     </Stack>
                 </Stack>
 
-                {/* Pravá strana - výsledky */}
                 <Stack flex={1} sx={{ display: 'flex', flexDirection: 'column' }}>
-                    {/* HEAT výsledky */}
                     <Stack spacing={2} sx={{ flex: '0 0 auto' }}>
                         <Typography variant="h6">HEAT Results Table</Typography>
-                        <DataGrid
-                            rows={heatResults}
-                            columns={columns}
-                            autoHeight
-                            disableRowSelectionOnClick
-                            hideFooter
-                        />
-                        {heatPenetrationResult && (
-                            <Alert severity="success">
-                                HEAT Penetration (current input): {heatPenetrationResult} mm
-                            </Alert>
-                        )}
-                        {heatOverpressure && (
-                            <Alert severity="info">
-                                HEAT Overpressure: {heatOverpressure} mm
-                            </Alert>
-                        )}
-                        {error && (
-                            <Alert severity="error" sx={{ mt: 2 }}>
-                                {error}
-                            </Alert>
-                        )}
+                        <DataGrid rows={heatResults} columns={columns} autoHeight disableRowSelectionOnClick hideFooter />
+                        {heatPenetrationResult && <Alert severity="success">HEAT Penetration (current input): {heatPenetrationResult} mm</Alert>}
+                        {heatOverpressure && <Alert severity="info">HEAT Overpressure: {heatOverpressure} mm</Alert>}
+                        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
                     </Stack>
 
-                {/* HE výsledky */}
-                <Stack spacing={2} sx={{
-                    flex: '0 0 auto',
-                    position: 'absolute',
-                    marginTop: '655px'
-                }}>
-                    <Typography variant="h6">HE Results</Typography>
-                    {heResult && (
-                        <Alert severity="success">
-                            HE Overpressure: {heResult} mm
-                        </Alert>
-                    )}
+                    <Stack spacing={2} sx={{ flex: '0 0 auto', marginTop: '2rem' }}>
+                        <Typography variant="h6">HE Results</Typography>
+                        {heResult && <Alert severity="success">HE Overpressure: {heResult} mm</Alert>}
+                    </Stack>
                 </Stack>
-
-                {error && (
-                    <Alert severity="error" sx={{ mt: 2 }}>
-                        {error}
-                    </Alert>
-                )}
             </Stack>
-        </Stack>
 
-        {/* 5. Pass refreshKey to CalculationHistoryFooter */}
-        <CalculationHistoryFooter refreshKey={history.length} />
-    </>
-);
+            <CalculationHistoryFooter refreshKey={history.length} />
+        </>
+    );
 }
