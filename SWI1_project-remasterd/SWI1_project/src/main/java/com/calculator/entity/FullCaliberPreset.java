@@ -24,6 +24,8 @@ public class FullCaliberPreset {
     private Double thicknessExponent;  // n
     private Double scaleExponent;      // s
     private Double range;         // m
+    private Long userId;
+    private boolean basePreset;
 
     public Long getId() {
         return id;
@@ -103,5 +105,21 @@ public class FullCaliberPreset {
 
     public void setRange(Double range) {
         this.range = range;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public boolean isBasePreset() {
+        return basePreset;
+    }
+
+    public void setBasePreset(boolean basePreset) {
+        this.basePreset = basePreset;
     }
 }

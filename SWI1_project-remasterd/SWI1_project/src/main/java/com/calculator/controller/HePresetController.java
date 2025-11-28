@@ -2,6 +2,7 @@ package com.calculator.controller;
 
 import com.calculator.entity.HePreset;
 import com.calculator.repository.HePresetRepository;
+import com.calculator.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,18 +14,24 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:3000")
 public class HePresetController {
     private final HePresetRepository repository;
+    private final UserService userService;
 
-    public HePresetController(HePresetRepository repository) {
+    public HePresetController(HePresetRepository repository, UserService userService) {
         this.repository = repository;
+        this.userService = userService;
     }
 
     @GetMapping
     public ResponseEntity<List<HePreset>> getAllPresets() {
-        return ResponseEntity.ok(repository.findAll());
+        Long userId = userService.getCurrentUserId();
+        List<HePreset> presets = repository.findByUserId(userId);
+        presets.addAll(repository.findByUserId(null)); // Add base presets
+        return ResponseEntity.ok(presets);
     }
 
     @PostMapping
     public ResponseEntity<HePreset> createPreset(@RequestBody HePreset preset) {
+        preset.setUserId(userService.getCurrentUserId());
         HePreset savedPreset = repository.save(preset);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedPreset);
     }

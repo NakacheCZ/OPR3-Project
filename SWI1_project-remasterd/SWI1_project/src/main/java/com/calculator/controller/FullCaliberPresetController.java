@@ -2,6 +2,7 @@ package com.calculator.controller;
 
 import com.calculator.entity.FullCaliberPreset;
 import com.calculator.repository.FullCaliberPresetRepository;
+import com.calculator.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,14 +16,19 @@ import java.util.List;
 @Slf4j
 public class FullCaliberPresetController {
     private final FullCaliberPresetRepository repository;
+    private final UserService userService;
 
-    public FullCaliberPresetController(FullCaliberPresetRepository repository) {
+    public FullCaliberPresetController(FullCaliberPresetRepository repository, UserService userService) {
         this.repository = repository;
+        this.userService = userService;
     }
 
     @GetMapping
     public ResponseEntity<List<FullCaliberPreset>> getAllPresets() {
-        return ResponseEntity.ok(repository.findAll());
+        Long userId = userService.getCurrentUserId();
+        List<FullCaliberPreset> presets = repository.findByUserId(userId);
+        presets.addAll(repository.findByUserId(null)); // Add base presets
+        return ResponseEntity.ok(presets);
     }
 
     @PostMapping
@@ -33,6 +39,7 @@ public class FullCaliberPresetController {
                 log.warn("Missing preset name");
                 return ResponseEntity.badRequest().build();
             }
+            preset.setUserId(userService.getCurrentUserId());
             FullCaliberPreset savedPreset = repository.save(preset);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedPreset);
         } catch (Exception e) {

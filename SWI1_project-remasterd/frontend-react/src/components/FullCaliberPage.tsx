@@ -5,6 +5,7 @@ import { Button, TextField, MenuItem, Typography, Stack, Alert, Paper } from '@m
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import CalculationHistoryFooter from './CalculationHistoryFooter';
 import '../App.css';
+import api from '../api';
 
 
 interface FullCaliberResult {
@@ -57,13 +58,7 @@ export default function FullCaliberPage() {
 
 
   useEffect(() => {
-    fetch('http://localhost:8080/api/calculator/presets/full-caliber')
-        .then(res => {
-          if (!res.ok) {
-            throw new Error('Failed to fetch presets');
-          }
-          return res.json();
-        })
+    api.get<ShellPreset[]>('http://localhost:8080/api/calculator/presets/full-caliber')
         .then(data => {
           if (Array.isArray(data)) {
             setShellPresets(data);
@@ -76,11 +71,7 @@ export default function FullCaliberPage() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/calculator/calculation-history');
-        if (!response.ok) {
-          throw new Error('Chyba při načítání historie');
-        }
-        const data = await response.json();
+        const data = await api.get<CalculationHistory[]>('http://localhost:8080/api/calculator/calculation-history');
         setHistory(data);
       } catch (err: any) {
         console.error(err.message);
@@ -108,10 +99,7 @@ export default function FullCaliberPage() {
       const range = ranges[index];
       const row: any = { id: index, range };
       for (const angle of angles) {
-        const response = await fetch('http://localhost:8080/api/calculator/full-caliber', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const data = await api.post<any>('http://localhost:8080/api/calculator/full-caliber', {
             mass: parseFloat(mass),
             velocity: parseFloat(velocity),
             diameter: parseFloat(diameter),
@@ -120,14 +108,7 @@ export default function FullCaliberPage() {
             materialCoefficient: parseFloat(constant),
             materialExponent: parseFloat(thicknessExponent),
             resistanceCoefficient: parseFloat(scaleExponent),
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Chyba při výpočtu');
-        }
-
-        const data = await response.json();
+          });
         row[`result${angle}`] = data.result?.toFixed(2) ?? '';
       }
       tableResults.push(row);
@@ -142,10 +123,7 @@ export default function FullCaliberPage() {
   const handleIndividualCalculate = async () => {
     try {
       const parsedAngle = parseFloat(angle); // Převeďte `angle` na číslo
-      const response = await fetch('http://localhost:8080/api/calculator/full-caliber', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const data = await api.post<any>('http://localhost:8080/api/calculator/full-caliber', {
           mass: parseFloat(mass),
           velocity: parseFloat(velocity),
           angle: parsedAngle * Math.PI / 180, // Použijte převedený úhel
@@ -154,14 +132,8 @@ export default function FullCaliberPage() {
           materialExponent: parseFloat(thicknessExponent),
           resistanceCoefficient: parseFloat(scaleExponent),
           range: parseFloat(range),
-        }),
-      });
+        });
 
-      if (!response.ok) {
-        throw new Error('Chyba při výpočtu');
-      }
-
-      const data = await response.json();
       setFinalResult(data.result?.toFixed(2) ?? '');
 
       // Aktualizace seznamu historie
@@ -176,11 +148,7 @@ export default function FullCaliberPage() {
   const fetchHistory = async () => {
     setIsLoading(true); // Zobrazit indikátor načítání
     try {
-      const response = await fetch('http://localhost:8080/api/calculator/calculation-history');
-      if (!response.ok) {
-        throw new Error('Chyba při načítání historie');
-      }
-      const data = await response.json();
+      const data = await api.get<CalculationHistory[]>('http://localhost:8080/api/calculator/calculation-history');
       setHistory(data);
     } catch (err: any) {
       setError(err.message || 'Došlo k chybě při načítání historie');
@@ -196,12 +164,7 @@ export default function FullCaliberPage() {
   const handleCalculateBoth = async () => {
     try {
       const parsedAngle = parseFloat(angle); // Převeďte `angle` na číslo
-      const response = await fetch('http://localhost:8080/api/calculator/full-caliber', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const data = await api.post<any>('http://localhost:8080/api/calculator/full-caliber', {
           mass: parseFloat(mass),
           velocity: parseFloat(velocity),
           angle: parsedAngle * Math.PI / 180, // Převod na radiány
@@ -210,14 +173,8 @@ export default function FullCaliberPage() {
           materialExponent: parseFloat(thicknessExponent),
           resistanceCoefficient: parseFloat(scaleExponent),
           range: parseFloat(range),
-        }),
-      });
+        });
 
-      if (!response.ok) {
-        throw new Error('Chyba při výpočtu');
-      }
-
-      const data = await response.json();
       await handleCalculate(); // Also fill the full-angle results table
       setFinalResult(data.result?.toFixed(2) ?? '');
 
@@ -253,17 +210,7 @@ setRefreshKey(prev => prev + 1);
 
   const saveCalculationHistory = async (history: any) => {
     try {
-      const response = await fetch('http://localhost:8080/api/calculator/save-calculation-history', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(history),
-      });
-
-      if (!response.ok) {
-        throw new Error('Chyba při ukládání historie');
-      }
+      await api.post('http://localhost:8080/api/calculator/save-calculation-history', history);
     } catch (err: any) {
       setError(err.message || 'Došlo k chybě při ukládání historie');
     }
@@ -291,22 +238,7 @@ setRefreshKey(prev => prev + 1);
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col items-center px-4 ">
-            <Stack direction="row" alignItems="center" justifyContent="space-between" className="header-section mt-8">
-  <Button
-    variant="contained"
-    color="primary"
-    onClick={() => navigate('/')}
-  >
-    Back to Menu
-  </Button>
-  <h1 style={{ margin: 0, flexGrow: 1, textAlign: 'center' }}>Full Caliber</h1>
-  {/* Empty space holder to balance layout */}
-  <div style={{ width: '120px' }}></div>
-</Stack>
-
-
-
+    <>
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={4} alignItems="flex-start">
         <Stack spacing={2} flex={1}>
           <Select
@@ -320,7 +252,7 @@ setRefreshKey(prev => prev + 1);
               Select Shell Preset
             </MenuItem>
             {shellPresets.map(preset => (
-              <MenuItem key={preset.id} value={preset.id}>
+              <MenuItem key={`${preset.id}-${preset.name}`} value={preset.id}>
                 {preset.name}
               </MenuItem>
             ))}
@@ -404,7 +336,6 @@ setRefreshKey(prev => prev + 1);
         </Stack>
       </Stack>
       <CalculationHistoryFooter refreshKey={refreshKey} />
-
-    </div>
+    </>
   );
 }

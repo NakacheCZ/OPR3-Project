@@ -15,5 +15,6 @@ public interface HePresetRepository extends JpaRepository<HePreset, Long> {
     @Query("SELECT h FROM HePreset h WHERE h.explosiveType = :type")
     List<HePreset> findByExplosiveType(@Param("type") ExplosiveType type);
     List<HePreset> findByNameContainingIgnoreCase(String name);
+    List<HePreset> findByUserId(Long userId);
 
 }

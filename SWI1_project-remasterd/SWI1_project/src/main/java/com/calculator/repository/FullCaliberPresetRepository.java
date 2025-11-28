@@ -12,4 +12,6 @@ public interface FullCaliberPresetRepository extends JpaRepository<FullCaliberPr
     Optional<FullCaliberPreset> findByName(String name);
 
     List<FullCaliberPreset> findByNameContainingIgnoreCase(String name);
+
+    List<FullCaliberPreset> findByUserId(Long userId);
 }

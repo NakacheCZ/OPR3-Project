@@ -5,6 +5,7 @@ import {Button, TextField, Typography, Stack, Alert, Select, MenuItem, Divider, 
 import type { SelectChangeEvent } from '@mui/material/Select';
 import CalculationHistoryFooter from './CalculationHistoryFooter';
 import '../App.css';
+import api from '../api';
 
 interface HePreset {
     id: number;
@@ -72,22 +73,19 @@ export default function HighExplosivePage() {
     const [history, setHistory] = useState<any[]>([]);
 
     useEffect(() => {
-        fetch('http://localhost:8080/api/calculator/presets/heat')
-            .then(res => res.json())
+        api.get<HeatPresetResponse[]>('http://localhost:8080/api/calculator/presets/heat')
             .then(data => setHeatPresets(Array.isArray(data) ? data : []))
             .catch(() => setHeatPresets([]));
     }, []);
 
     useEffect(() => {
-        fetch('http://localhost:8080/api/calculator/explosive-types')
-            .then(res => res.json())
+        api.get<ExplosiveType[]>('http://localhost:8080/api/calculator/explosive-types')
             .then(data => setExplosiveTypes(Array.isArray(data) ? data : []))
             .catch(() => setExplosiveTypes([]));
     }, []);
 
     useEffect(() => {
-        fetch('http://localhost:8080/api/calculator/presets/he')
-            .then(res => res.json())
+        api.get<HePreset[]>('http://localhost:8080/api/calculator/presets/he')
             .then(data => setHePresets(Array.isArray(data) ? data : []))
             .catch(() => setHePresets([]));
     }, []);
@@ -160,25 +158,15 @@ const handleHeatPresetChange = (event: SelectChangeEvent) => {
             const efficiencyVal = efficiencies[i];
             const row: any = { id: i, efficiency: efficiencyVal };
             for (const angleVal of angles) {
-                const response = await fetch('http://localhost:8080/api/calculator/heat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
+                const data = await api.post<any>('http://localhost:8080/api/calculator/heat', {
                         explosiveMass: Number(explosiveMass),
                         diameter: Number(diameter),
                         angleOfImpact: Number(angleVal) * Math.PI / 180, // <-- FIXED
                         coefficient: Number(coefficient),
                         efficiency: efficiencyVal,
                         explosiveType: heatExplosiveType
-                    }),
-                });
+                    });
 
-                if (!response.ok) {
-                    row[`result${angleVal}`] = '';
-                    continue;
-                }
-
-                const data = await response.json();
                 row[`result${angleVal}`] = typeof data.result === 'number'
                     ? data.result.toFixed(2)
                     : data.result
@@ -190,21 +178,15 @@ const handleHeatPresetChange = (event: SelectChangeEvent) => {
         setHeatResults(tableResults);
 
         // Main result for current input
-        const currentResponse = await fetch('http://localhost:8080/api/calculator/heat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+        const currentData = await api.post<any>('http://localhost:8080/api/calculator/heat', {
                 explosiveMass: Number(explosiveMass),
                 diameter: Number(diameter),
                 angleOfImpact: Number(angle), // <-- FIXED
                 coefficient: Number(coefficient),
                 efficiency: Number(efficiency),
                 explosiveType: heatExplosiveType
-            }),
-        });
+            });
 
-        if (!currentResponse.ok) throw new Error('HEAT penetration calculation failed');
-        const currentData = await currentResponse.json();
         setHeatPenetrationResult(
             typeof currentData.result === 'number'
                 ? currentData.result.toFixed(2)
@@ -216,54 +198,38 @@ const handleHeatPresetChange = (event: SelectChangeEvent) => {
         const explosiveTypeName = explosiveTypes.find(t => String(t.id) === String(heatExplosiveType))?.name || '';
 
         // Overpressure for current input
-        const overpressureResponse = await fetch('http://localhost:8080/api/calculator/overpressure', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+        const overpressureData = await api.post<any>('http://localhost:8080/api/calculator/overpressure', {
                 explosiveMass: Number(explosiveMass),
                 explosiveType: explosiveTypeName  // posíláme název výbušniny
-            }),
-        });
-
-
-
-        if (overpressureResponse.ok) {
-            const overpressureData = await overpressureResponse.json();
-            setHeatOverpressure(
-                typeof overpressureData.result === 'number'
-                    ? overpressureData.result.toFixed(2)
-                    : overpressureData.result
-                        ? String(overpressureData.result)
-                        : ''
-            );
-            // Save HEAT overpressure to history
-            await fetch('http://localhost:8080/api/calculator/save-calculation-history', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    timestamp: new Date().toISOString(),
-                    parameters: JSON.stringify({
-                        explosiveMass,
-                        diameter,
-                        angleOfImpact: angle,
-                        coefficient,
-                        efficiency,
-                        explosiveType: heatExplosiveType
-                    }),
-                    calculationType: 'HEAT Overpressure',
-                    result: overpressureData.result
-                }),
             });
-            fetchHistory(); // <-- add this after each save
-        } else {
-            setHeatOverpressure('');
-        }
+
+
+
+        setHeatOverpressure(
+            typeof overpressureData.result === 'number'
+                ? overpressureData.result.toFixed(2)
+                : overpressureData.result
+                    ? String(overpressureData.result)
+                    : ''
+        );
+        // Save HEAT overpressure to history
+        await api.post('http://localhost:8080/api/calculator/save-calculation-history', {
+                timestamp: new Date().toISOString(),
+                parameters: JSON.stringify({
+                    explosiveMass,
+                    diameter,
+                    angleOfImpact: angle,
+                    coefficient,
+                    efficiency,
+                    explosiveType: heatExplosiveType
+                }),
+                calculationType: 'HEAT Overpressure',
+                result: overpressureData.result
+            });
+        fetchHistory(); // <-- add this after each save
 
         // Save calculation to history
-        await fetch('http://localhost:8080/api/calculator/save-calculation-history', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+        await api.post('http://localhost:8080/api/calculator/save-calculation-history', {
                 timestamp: new Date().toISOString(),
                 parameters: JSON.stringify({
                     explosiveMass,
@@ -275,8 +241,7 @@ const handleHeatPresetChange = (event: SelectChangeEvent) => {
                 }),
                 calculationType: 'HEAT Penetration',
                 result: currentData.result
-            }),
-        });
+            });
         fetchHistory(); // <-- add this after each save
 
     } catch (error: any) {
@@ -296,25 +261,8 @@ const handleHeCalculate = async () => {
 
         console.log('Odesílání HE požadavku:', requestData);
 
-        const response = await fetch('http://localhost:8080/api/calculator/he', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestData)
-        });
+        const data = await api.post<any>('http://localhost:8080/api/calculator/he', requestData);
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Server odpověď:', {
-                status: response.status,
-                statusText: response.statusText,
-                body: errorText
-            });
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
         setHeResult(
             typeof data.result === 'number'
                 ? data.result.toFixed(2) // Zaokrouhlení na 2 desetinná místa
@@ -324,10 +272,7 @@ const handleHeCalculate = async () => {
         );
 
         // Save HE overpressure to history
-        await fetch('http://localhost:8080/api/calculator/save-calculation-history', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+        await api.post('http://localhost:8080/api/calculator/save-calculation-history', {
                 timestamp: new Date().toISOString(),
                 parameters: JSON.stringify({
                     explosiveMass: heExplosiveMass,
@@ -335,8 +280,7 @@ const handleHeCalculate = async () => {
                 }),
                 calculationType: 'HE Overpressure',
                 result: data.result
-            }),
-        });
+            });
         fetchHistory(); // <-- add this after each save
     } catch (error) {
         console.error('Chyba při HE výpočtu:', error);
@@ -346,8 +290,7 @@ const handleHeCalculate = async () => {
     // 2. Add fetchHistory function
     const fetchHistory = async () => {
         try {
-            const response = await fetch('http://localhost:8080/api/calculator/calculation-history');
-            const data = await response.json();
+            const data = await api.get<any[]>('http://localhost:8080/api/calculator/calculation-history');
             setHistory(data);
         } catch (err) {
             console.error('Chyba při načítání historie');
@@ -355,15 +298,7 @@ const handleHeCalculate = async () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 flex flex-col items-center px-4">
-            <Stack direction="row" alignItems="center" justifyContent="space-between" className="header-section mt-8" width="100%">
-                <Button variant="contained" color="primary" onClick={() => navigate('/')}>
-                    Back to Menu
-                </Button>
-                <h1 style={{ margin: 0, flexGrow: 1, textAlign: 'center' }}>HEAT / HE</h1>
-                <div style={{ width: '120px' }}></div>
-            </Stack>
-
+        <>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={4} alignItems="stretch" width="100%">
                 {/* Levá strana - formuláře zůstává stejná */}
                 <Stack spacing={4} flex={1}>
@@ -539,6 +474,6 @@ const handleHeCalculate = async () => {
 
         {/* 5. Pass refreshKey to CalculationHistoryFooter */}
         <CalculationHistoryFooter refreshKey={history.length} />
-    </div>
+    </>
 );
 }

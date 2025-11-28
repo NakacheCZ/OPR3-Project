@@ -11,5 +11,6 @@ import java.util.List;
 public interface HeatPresetRepository extends JpaRepository<HeatPreset, Long> {
     List<HeatPreset> findByNameContainingIgnoreCase(String name);
     List<HeatPreset> findByExplosiveType(ExplosiveType explosiveType);
+    List<HeatPreset> findByUserId(Long userId);
 
 }

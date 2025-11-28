@@ -17,20 +17,7 @@ export default function InfoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col items-center px-4">
-            <Stack direction="row" alignItems="center" justifyContent="space-between" className="header-section mt-8">
-  <Button
-    variant="contained"
-    color="primary"
-    onClick={() => navigate('/')}
-  >
-    Back to Menu
-  </Button>
-  <h1 style={{ margin: 0, flexGrow: 1, textAlign: 'center' }}>Info Page</h1>
-  {/* Empty space holder to balance layout */}
-  <div style={{ width: '120px' }}></div>
-</Stack>
-
+    <>
     {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
@@ -102,7 +89,6 @@ export default function InfoPage() {
           </p>
         </div>
       </div>
-
-    </div>
+    </>
   );
 }

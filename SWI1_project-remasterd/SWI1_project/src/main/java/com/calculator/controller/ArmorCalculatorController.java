@@ -1,8 +1,6 @@
 package com.calculator.controller;
 
 import com.calculator.entity.CalculationHistory;
-import com.calculator.entity.HePreset;
-import com.calculator.entity.HeatPreset;
 import com.calculator.models.*;
 import com.calculator.repository.*;
 import com.calculator.service.ArmorPenetrationCalculatorService;
@@ -14,16 +12,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
-
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/calculator")
+@CrossOrigin(origins = "http://localhost:3000")
 @Slf4j
 public class ArmorCalculatorController {
 
@@ -289,9 +284,9 @@ public ResponseEntity<List<ExplosiveTypeResponse>> getExplosiveTypes() {
 
 
     @PostMapping("/save-calculation-history")
-    public ResponseEntity<String> saveCalculationHistory(@RequestBody CalculationHistory history) {
+    public ResponseEntity<Map<String, String>> saveCalculationHistory(@RequestBody CalculationHistory history) {
         calculationHistoryRepository.save(history);
-        return ResponseEntity.ok("History saved successfully.");
+        return ResponseEntity.ok(Map.of("message", "History saved successfully."));
     }
     @GetMapping("/calculation-history")
     public ResponseEntity<List<CalculationHistory>> getCalculationHistory() {

@@ -27,6 +27,7 @@ public class CsvDataLoader {
     private final SubCaliberPresetRepository subCaliberPresetRepository;
     private final HeatPresetRepository heatPresetRepository;
     private final HePresetRepository hePresetRepository;
+    private final RoleRepository roleRepository;
 
     @Value("${app.csv-import.enabled:true}")
     private boolean csvImportEnabled;
@@ -44,6 +45,7 @@ public class CsvDataLoader {
         try {
 
             log.info("Starting CSV data import...");
+            loadRoles();
             loadExplosiveTypes();
             loadFullCaliberPresets();
             loadSubCaliberPresets();
@@ -74,6 +76,21 @@ public class CsvDataLoader {
             log.error("Error while clearing existing data", e);
             throw e; // Přehodíme výjimku, aby se zastavilo načítání nových dat
         }
+    }
+
+    private void loadRoles() {
+        log.info("Loading Roles...");
+        if (roleRepository.findByName("ROLE_USER").isEmpty()) {
+            Role userRole = new Role();
+            userRole.setName("ROLE_USER");
+            roleRepository.save(userRole);
+        }
+        if (roleRepository.findByName("ROLE_ADMIN").isEmpty()) {
+            Role adminRole = new Role();
+            adminRole.setName("ROLE_ADMIN");
+            roleRepository.save(adminRole);
+        }
+        log.info("Roles loaded.");
     }
 
 
@@ -171,7 +188,11 @@ public class CsvDataLoader {
                     preset.setName(line[0]);
                     String explosiveTypeName = line[1];
                     ExplosiveType explosiveType = explosiveTypeRepository.findByName(explosiveTypeName)
-                            .orElseThrow(() -> new IllegalArgumentException("Unknown explosive type: " + explosiveTypeName));
+                            .orElse(null);
+                    if (explosiveType == null) {
+                        log.warn("Unknown explosive type: {}", explosiveTypeName);
+                        continue;
+                    }
                     preset.setExplosiveType(explosiveType);
                     preset.setDiameter(Double.parseDouble(line[2]));
                     preset.setExplosiveMass(Double.parseDouble(line[3]));
@@ -200,7 +221,11 @@ public class CsvDataLoader {
                     preset.setName(line[0]);
                     String explosiveTypeName = line[1];
                     ExplosiveType explosiveType = explosiveTypeRepository.findByName(explosiveTypeName)
-                            .orElseThrow(() -> new IllegalArgumentException("Unknown explosive type: " + explosiveTypeName));
+                            .orElse(null);
+                    if (explosiveType == null) {
+                        log.warn("Unknown explosive type: {}", explosiveTypeName);
+                        continue;
+                    }
                     preset.setExplosiveType(explosiveType);
                     preset.setDiameter(Double.parseDouble(line[2]));
                     preset.setExplosiveMass(Double.parseDouble(line[3]));

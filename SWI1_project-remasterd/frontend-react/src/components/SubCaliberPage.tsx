@@ -5,6 +5,7 @@ import { Button, TextField, Typography, Stack, Alert, Paper, Select, MenuItem } 
 import type { SelectChangeEvent } from '@mui/material/Select';
 import CalculationHistoryFooter from './CalculationHistoryFooter';
 import '../App.css';
+import api from '../api';
 
 
 interface SubCaliberPreset {
@@ -80,8 +81,7 @@ export default function SubCaliberPage() {
         fetchHistory();
     }, []);
     useEffect(() => {
-        fetch('http://localhost:8080/api/calculator/presets/sub-caliber')
-            .then(res => res.json())
+        api.get<SubCaliberPreset[]>('http://localhost:8080/api/calculator/presets/sub-caliber')
             .then(data => setShellPresets(Array.isArray(data) ? data : []))
             .catch(() => setShellPresets([]));
     }, []);
@@ -112,8 +112,7 @@ export default function SubCaliberPage() {
 
     const fetchHistory = async () => {
         try {
-            const response = await fetch('http://localhost:8080/api/calculator/calculation-history');
-            const data = await response.json();
+            const data = await api.get<CalculationHistory[]>('http://localhost:8080/api/calculator/calculation-history');
             setHistory(data);
         } catch (err) {
             console.error('Chyba při načítání historie');
@@ -135,10 +134,7 @@ export default function SubCaliberPage() {
                 const row: any = { id: index, range };
                 
                 for (const angle of angles) {
-                    const response = await fetch('http://localhost:8080/api/calculator/sub-caliber', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
+                    const data = await api.post<any>('http://localhost:8080/api/calculator/sub-caliber', {
                             totalLength: parseFloat(totalLength),
                             diameter: parseFloat(diameter),
                             densityPenetrator: parseFloat(density),
@@ -149,14 +145,8 @@ export default function SubCaliberPage() {
                             angle: angle * Math.PI / 180,
                             range: range,
                             material: material
-                        }),
-                    });
+                        });
 
-                    if (!response.ok) {
-                        throw new Error('Chyba při výpočtu');
-                    }
-
-                    const data = await response.json();
                     row[`result${angle}`] = data.result?.toFixed(2) ?? '';
                 }
                 tableResults.push(row);
@@ -165,10 +155,7 @@ export default function SubCaliberPage() {
             setResults(tableResults);
 
             // Výpočet pro aktuálně zadané hodnoty
-            const currentResponse = await fetch('http://localhost:8080/api/calculator/sub-caliber', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            const currentData = await api.post<any>('http://localhost:8080/api/calculator/sub-caliber', {
                     totalLength: parseFloat(totalLength),
                     diameter: parseFloat(diameter),
                     densityPenetrator: parseFloat(density),
@@ -179,14 +166,8 @@ export default function SubCaliberPage() {
                     angle: parseFloat(angle) * Math.PI / 180,
                     range: parseFloat(range),
                     material: material
-                }),
-            });
+                });
 
-            if (!currentResponse.ok) {
-                throw new Error('Chyba při výpočtu');
-            }
-
-            const currentData = await currentResponse.json();
             setFinalResult(currentData.result?.toFixed(2) ?? '');
 
             // Uložení do historie
@@ -216,33 +197,14 @@ export default function SubCaliberPage() {
 
     const saveCalculationHistory = async (history: Partial<CalculationHistory>) => {
         try {
-            await fetch('http://localhost:8080/api/calculator/save-calculation-history', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(history),
-            });
+            await api.post('http://localhost:8080/api/calculator/save-calculation-history', history);
         } catch (err) {
             console.error('Chyba při ukládání historie');
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 flex flex-col items-center px-4">
-            <Stack direction="row" alignItems="center" justifyContent="space-between" className="header-section mt-8">
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => navigate('/')}
-                >
-                    Back to Menu
-                </Button>
-                <h1 style={{ margin: 0, flexGrow: 1, textAlign: 'center' }}>Sub Caliber</h1>
-                {/* Empty space holder to balance layout */}
-                <div style={{ width: '120px' }}></div>
-            </Stack>
-
-
-
+        <>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={4} alignItems="flex-start">
                 <Stack spacing={2} flex={1}>
                     <Select
@@ -359,6 +321,6 @@ export default function SubCaliberPage() {
                 </Stack>
             </Stack>
             <CalculationHistoryFooter refreshKey={history.length} />
-        </div>
+        </>
     );
 }

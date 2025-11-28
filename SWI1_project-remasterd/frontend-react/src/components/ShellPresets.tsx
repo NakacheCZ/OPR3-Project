@@ -20,7 +20,7 @@ import {
     Select,
     MenuItem,
     FormControl,
-    InputLabel, Stack, DialogContentText,
+    InputLabel, Stack, DialogContentText, Typography,
 } from '@mui/material';
 
 
@@ -29,6 +29,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import {useNavigate} from "react-router-dom";
 import { ExplosiveType } from '../types';
+import api from '../api';
 
 // Definice typů
 interface TabPanelProps {
@@ -40,6 +41,7 @@ interface TabPanelProps {
 interface BasePreset {
     id?: number;
     name: string;
+    userId?: number;
 }
 
 interface FullCaliberPreset extends BasePreset {
@@ -157,6 +159,12 @@ const [formData, setFormData] = useState<any>(() => ({
 const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 const [presetToDelete, setPresetToDelete] = useState<{ id: number; name: string } | null>(null);
 const [error, setError] = useState<string>('');
+const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+useEffect(() => {
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
+}, []);
 
 const handleDeleteClick = (preset: { id: number; name: string }, type: typeof presetType) => {
     setPresetType(type);
@@ -167,13 +175,7 @@ const handleDeleteClick = (preset: { id: number; name: string }, type: typeof pr
 const handleDeleteConfirm = async () => {
   if (presetToDelete) {
     try {
-      const response = await fetch(`http://localhost:8080/api/calculator/presets/${presetType}/${presetToDelete.id}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Chyba při mazání presetu');
-      }
+      await api.delete(`http://localhost:8080/api/calculator/presets/${presetType}/${presetToDelete.id}`);
       
       setDeleteDialogOpen(false);
       setPresetToDelete(null);
@@ -226,17 +228,7 @@ const handleSave = async () => {
             };
         }
 
-        const response = await fetch(`http://localhost:8080/api/calculator/${endpoint}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(dataToSend)
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        await api.post(`http://localhost:8080/api/calculator/${endpoint}`, dataToSend);
         
         // Po úspěšném uložení
         setOpenDialog(false);
@@ -250,15 +242,13 @@ const handleSave = async () => {
 
 // Načtení typů výbušnin při načtení komponenty
 useEffect(() => {
-    fetch('http://localhost:8080/api/calculator/explosive-types')
-        .then(res => res.json())
+    api.get<ExplosiveType[]>('http://localhost:8080/api/calculator/explosive-types')
         .then(data => setExplosiveTypes(data));
 }, []);
 
 useEffect(() => {
     // Načtení typů výbušnin
-    fetch('http://localhost:8080/api/calculator/explosive-types')
-        .then(res => res.json())
+    api.get<ExplosiveType[]>('http://localhost:8080/api/calculator/explosive-types')
         .then(data => setExplosiveTypes(data));
 }, []);
 
@@ -321,11 +311,11 @@ const handleAdd = (type: 'full-caliber' | 'sub-caliber' | 'heat' | 'he') => {
     const fetchAllData = async () => {
         try {
             const [full, sub, heat, he, explosives] = await Promise.all([
-                fetch('http://localhost:8080/api/calculator/presets/full-caliber').then(res => res.json()),
-                fetch('http://localhost:8080/api/calculator/presets/sub-caliber').then(res => res.json()),
-                fetch('http://localhost:8080/api/calculator/presets/heat').then(res => res.json()),
-                fetch('http://localhost:8080/api/calculator/presets/he').then(res => res.json()),
-                fetch('http://localhost:8080/api/calculator/explosive-types').then(res => res.json())
+                api.get<any[]>('http://localhost:8080/api/calculator/presets/full-caliber'),
+                api.get<SubCaliberPreset[]>('http://localhost:8080/api/calculator/presets/sub-caliber'),
+                api.get<any[]>('http://localhost:8080/api/calculator/presets/heat'),
+                api.get<any[]>('http://localhost:8080/api/calculator/presets/he'),
+                api.get<ExplosiveType[]>('http://localhost:8080/api/calculator/explosive-types')
             ]);
 
             setFullCaliberPresets(full || []);
@@ -351,13 +341,7 @@ const handleAdd = (type: 'full-caliber' | 'sub-caliber' | 'heat' | 'he') => {
     // Upravte handleEdit funkci pro nastavení výchozích hodnot úhlu a vzdálenosti
     const handleDelete = async (id: number, type: string) => {
     try {
-        const response = await fetch(`http://localhost:8080/api/calculator/presets/${type}/${id}`, {
-            method: 'DELETE',
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to delete preset');
-        }
+        await api.delete(`http://localhost:8080/api/calculator/presets/${type}/${id}`);
 
         // Aktualizace seznamu presetů po úspěšném smazání
         fetchPresets();
@@ -387,11 +371,13 @@ const handleAdd = (type: 'full-caliber' | 'sub-caliber' | 'heat' | 'he') => {
     icon={<EditIcon />}
     label="Edit"
     onClick={() => handleEdit(params.row, 'full-caliber')}
+    disabled={!params.row.userId}
 />,
                 <GridActionsCellItem
     icon={<DeleteIcon />}
     label="Delete"
     onClick={() => handleDeleteClick(params.row, 'full-caliber')}
+    disabled={!params.row.userId}
 />
             ]
         }
@@ -416,11 +402,13 @@ const subCaliberColumns: GridColDef[] = [
     icon={<EditIcon />}
     label="Edit"
     onClick={() => handleEdit(params.row, 'sub-caliber')}
+    disabled={!params.row.userId}
 />,
             <GridActionsCellItem
                 icon={<DeleteIcon />}
                 label="Delete"
                 onClick={() => handleDeleteClick(params.row, 'sub-caliber')}
+                disabled={!params.row.userId}
             />
         ]
     }
@@ -441,11 +429,13 @@ const heatColumns: GridColDef[] = [
                 icon={<EditIcon />}
                 label="Edit"
                 onClick={() => handleEdit(params.row, 'heat')}
+                disabled={!params.row.userId}
             />,
             <GridActionsCellItem
                 icon={<DeleteIcon />}
                 label="Delete"
                 onClick={() => handleDeleteClick(params.row, 'heat')}
+                disabled={!params.row.userId}
             />
         ]
     }
@@ -464,11 +454,13 @@ const heColumns: GridColDef[] = [
                 icon={<EditIcon />}
                 label="Edit"
                 onClick={() => handleEdit(params.row, 'he')}
+                disabled={!params.row.userId}
             />,
             <GridActionsCellItem
                 icon={<DeleteIcon />}
                 label="Delete"
                 onClick={() => handleDeleteClick(params.row, 'he')}
+                disabled={!params.row.userId}
             />
         ]
     }
@@ -481,11 +473,7 @@ const explosiveTypeColumns: GridColDef[] = [
 
 const fetchPresets = async () => {
     try {
-        const response = await fetch('http://localhost:8080/api/calculator/presets/full-caliber');
-        if (!response.ok) {
-            throw new Error('Chyba při načítání presetů');
-        }
-        const data = await response.json();
+        const data = await api.get<any[]>('http://localhost:8080/api/calculator/presets/full-caliber');
         // Použijeme správný setter podle typu presetu
         setFullCaliberPresets(data); // nebo setHePresets, setHeatPresets, atd.
     } catch (error) {
@@ -527,19 +515,7 @@ const handleEdit = (preset: any, type: typeof presetType) => {
 };
 
     return (
-        <div className="min-h-screen bg-gray-900 flex flex-col items-center px-4">
-            <Stack direction="row" alignItems="center" justifyContent="space-between" className="header-section mt-8">
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => navigate('/')}
-                >
-                    Back to Menu
-                </Button>
-                <h1 style={{ margin: 0, flexGrow: 1, textAlign: 'center' }}>Presets</h1>
-                {/* Empty space holder to balance layout */}
-                <div style={{ width: '120px' }}></div>
-            </Stack>
+        <>
         <Box sx={{ width: '100%' }}>
             <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
                 <Tab label="Full Caliber" />
@@ -550,8 +526,11 @@ const handleEdit = (preset: any, type: typeof presetType) => {
             </Tabs>
 
             <TabPanel value={tabValue} index={0}>
-                
-<Button startIcon={<AddIcon />} onClick={() => handleAdd('full-caliber')}>Add New</Button>
+                {isLoggedIn ? (
+                    <Button startIcon={<AddIcon />} onClick={() => handleAdd('full-caliber')}>Add New</Button>
+                ) : (
+                    <Typography>Login to add your own presets</Typography>
+                )}
                 <DataGrid
                     rows={fullCaliberPresets}
                     columns={fullCaliberColumns}
@@ -559,8 +538,11 @@ const handleEdit = (preset: any, type: typeof presetType) => {
                 />
             </TabPanel>
 <TabPanel value={tabValue} index={1}>
-    
-<Button startIcon={<AddIcon />} onClick={() => handleAdd('sub-caliber')}>Add New</Button>
+    {isLoggedIn ? (
+        <Button startIcon={<AddIcon />} onClick={() => handleAdd('sub-caliber')}>Add New</Button>
+    ) : (
+        <Typography>Login to add your own presets</Typography>
+    )}
     <DataGrid
         rows={subCaliberPresets}
         columns={subCaliberColumns}
@@ -569,8 +551,11 @@ const handleEdit = (preset: any, type: typeof presetType) => {
 </TabPanel>
 
 <TabPanel value={tabValue} index={2}>
-    
-<Button startIcon={<AddIcon />} onClick={() => handleAdd('heat')}>Add New</Button>
+    {isLoggedIn ? (
+        <Button startIcon={<AddIcon />} onClick={() => handleAdd('heat')}>Add New</Button>
+    ) : (
+        <Typography>Login to add your own presets</Typography>
+    )}
     <DataGrid
         rows={heatPresets}
         columns={heatColumns}
@@ -579,8 +564,11 @@ const handleEdit = (preset: any, type: typeof presetType) => {
 </TabPanel>
 
 <TabPanel value={tabValue} index={3}>
-    
-<Button startIcon={<AddIcon />} onClick={() => handleAdd('he')}>Add New</Button>
+    {isLoggedIn ? (
+        <Button startIcon={<AddIcon />} onClick={() => handleAdd('he')}>Add New</Button>
+    ) : (
+        <Typography>Login to add your own presets</Typography>
+    )}
     <DataGrid
         rows={hePresets}
         columns={heColumns}
@@ -781,6 +769,6 @@ const handleEdit = (preset: any, type: typeof presetType) => {
     </Button>
   </DialogActions>
 </Dialog>
-        </div>
+        </>
     );
 }
