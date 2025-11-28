@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -42,11 +43,17 @@ public class CsvDataLoader {
             return;
         }
 
+        // If admin user already exists, assume DB is initialized
+        if (userRepository.findByUsername("admin").isPresent()) {
+            log.info("Database already initialized. Skipping data import.");
+            return;
+        }
+
         clearExistingData();
 
         try {
-            log.info("Starting data import...");
-            User adminUser = loadUsers();
+            log.info("Performing initial data import...");
+            User adminUser = loadRolesAndAdmin();
             loadExplosiveTypes();
             loadFullCaliberPresets(adminUser);
             loadSubCaliberPresets(adminUser);
@@ -54,7 +61,7 @@ public class CsvDataLoader {
             loadHePresets(adminUser);
             log.info("Data import completed successfully");
         } catch (Exception e) {
-            log.error("Error during data import", e);
+            log.error("Error during initial data import", e);
         }
     }
 
@@ -69,7 +76,7 @@ public class CsvDataLoader {
         log.info("All existing data cleared successfully");
     }
 
-    private User loadUsers() {
+    private User loadRolesAndAdmin() {
         log.info("Loading Users...");
         User admin = new User();
         admin.setUsername("admin");
