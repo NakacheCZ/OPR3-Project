@@ -6,6 +6,7 @@ import type { SelectChangeEvent } from '@mui/material/Select';
 import CalculationHistoryFooter from './CalculationHistoryFooter';
 import '../App.css';
 import api from '../api';
+import { jwtDecode } from 'jwt-decode';
 
 
 interface SubCaliberPreset {
@@ -193,23 +194,29 @@ export default function SubCaliberPage() {
 
             setFinalResult(currentData.result?.toFixed(2) ?? '');
 
-            await saveCalculationHistory({
-                timestamp: new Date().toISOString(),
-                parameters: JSON.stringify({
-                    totalLength,
-                    diameter,
-                    density,
-                    hardness,
-                    velocity,
-                    targetDensity,
-                    targetHardness,
-                    angle,
-                    range,
-                    material
-                }),
-                calculationType: 'Sub-Caliber Penetration',
-                result: currentData.result,
-            });
+            const token = localStorage.getItem('token');
+            if (token) {
+                const decodedToken: { sub: string } = jwtDecode(token);
+                if (decodedToken.sub !== 'guest') {
+                    await saveCalculationHistory({
+                        timestamp: new Date().toISOString(),
+                        parameters: JSON.stringify({
+                            totalLength,
+                            diameter,
+                            density,
+                            hardness,
+                            velocity,
+                            targetDensity,
+                            targetHardness,
+                            angle,
+                            range,
+                            material
+                        }),
+                        calculationType: 'Sub-Caliber Penetration',
+                        result: currentData.result,
+                    });
+                }
+            }
 
             await fetchHistory();
         } catch (err: any) {

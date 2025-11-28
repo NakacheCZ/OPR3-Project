@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, TextField, Stack, Alert } from '@mui/material';
-import api from '../api';
+import api, { setAccessToken } from '../api';
 
 export default function SignupPage() {
     const navigate = useNavigate();
@@ -12,7 +12,8 @@ export default function SignupPage() {
     const handleSignup = async () => {
         try {
             const response = await api.post<{ token: string }>('http://localhost:8080/api/auth/signup', { username, password });
-            localStorage.setItem('token', response.token);
+            setAccessToken(response.token);
+            localStorage.setItem('token', response.token); // Save the token
             window.location.href = '/';
         } catch (err: any) {
             setError(err.message || 'An error occurred during signup.');

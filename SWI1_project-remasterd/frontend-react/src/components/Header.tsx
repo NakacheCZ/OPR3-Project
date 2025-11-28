@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@mui/material';
 import PersonIcon from './PersonIcon';
+import api, { setAccessToken } from '../api';
 
 interface HeaderProps {
     title?: string;
@@ -19,6 +20,9 @@ export default function Header({ title, username }: HeaderProps) {
 
     const handleLogout = () => {
         localStorage.removeItem('token');
+        setAccessToken(''); // Clear the in-memory token
+        // Also clear the refresh token cookie if you have one
+        document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         window.location.href = '/';
     };
 
@@ -52,17 +56,17 @@ export default function Header({ title, username }: HeaderProps) {
 
                 {/* Right Side: User Info */}
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div
-                        style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                    <div 
+                        style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} 
                         onClick={handleUserClick}
                     >
                         <PersonIcon size={32} />
                         <span className="text-white ml-2">{username || 'Guest'}</span>
                     </div>
                     {username && username !== 'guest' && (
-                        <Button
-                            variant="outlined"
-                            color="secondary"
+                        <Button 
+                            variant="outlined" 
+                            color="secondary" 
                             onClick={handleLogout}
                             style={{ marginLeft: '1rem' }}
                         >

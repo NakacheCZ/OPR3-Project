@@ -6,6 +6,7 @@ import Select, { SelectChangeEvent } from '@mui/material/Select';
 import CalculationHistoryFooter from './CalculationHistoryFooter';
 import '../App.css';
 import api from '../api';
+import { jwtDecode } from 'jwt-decode';
 
 
 interface FullCaliberResult {
@@ -159,21 +160,27 @@ export default function FullCaliberPage() {
       await handleCalculate();
       setFinalResult(data.result?.toFixed(2) ?? '');
 
-      await saveCalculationHistory({
-        timestamp: new Date().toISOString(),
-        parameters: JSON.stringify({
-          mass,
-          velocity,
-          angle,
-          diameter,
-          constant,
-          thicknessExponent,
-          scaleExponent,
-          range,
-        }),
-        calculationType: 'Full Caliber',
-        result: data.result,
-      });
+      const token = localStorage.getItem('token');
+      if (token) {
+        const decodedToken: { sub: string } = jwtDecode(token);
+        if (decodedToken.sub !== 'guest') {
+          await saveCalculationHistory({
+            timestamp: new Date().toISOString(),
+            parameters: JSON.stringify({
+              mass,
+              velocity,
+              angle,
+              diameter,
+              constant,
+              thicknessExponent,
+              scaleExponent,
+              range,
+            }),
+            calculationType: 'Full Caliber',
+            result: data.result,
+          });
+        }
+      }
 
       setRefreshKey(prev => prev + 1);
       await fetchHistory();

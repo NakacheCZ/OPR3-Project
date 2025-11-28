@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, TextField, Stack, Alert } from '@mui/material';
-import api from '../api';
+import api, { setAccessToken } from '../api';
+import { jwtDecode } from 'jwt-decode';
 
 export default function LoginPage() {
     const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function LoginPage() {
     const handleLogin = async () => {
         try {
             const response = await api.post<{ token: string }>('http://localhost:8080/api/auth/signin', { username, password });
+            setAccessToken(response.token);
             localStorage.setItem('token', response.token);
             window.location.href = '/';
         } catch (err: any) {

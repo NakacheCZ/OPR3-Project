@@ -13,7 +13,7 @@ import Layout from './components/Layout';
 import LoginPage from './components/LoginPage';
 import SignupPage from './components/SignupPage';
 import { jwtDecode } from 'jwt-decode';
-import api from './api';
+import { setAccessToken } from './api';
 
 function MainPage() {
     const navigate = useNavigate();
@@ -87,7 +87,7 @@ function MainPage() {
 }
 
 export default function App() {
-    const [username, setUsername] = useState<string | undefined>(undefined);
+    const [username, setUsername] = useState<string | undefined>("guest");
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -95,26 +95,13 @@ export default function App() {
             try {
                 const decodedToken: { sub: string } = jwtDecode(token);
                 setUsername(decodedToken.sub);
+                setAccessToken(token);
             } catch (error) {
                 console.error("Invalid token:", error);
-                localStorage.removeItem('token'); // Clear invalid token
-                loginAsGuest();
+                localStorage.removeItem('token');
             }
-        } else {
-            loginAsGuest();
         }
     }, []);
-
-    const loginAsGuest = async () => {
-        try {
-            const response = await api.post<{ token: string }>('http://localhost:8080/api/auth/signin', { username: 'guest', password: 'guest' });
-            localStorage.setItem('token', response.token);
-            const decodedToken: { sub: string } = jwtDecode(response.token);
-            setUsername(decodedToken.sub);
-        } catch (error) {
-            console.error("Failed to log in as guest:", error);
-        }
-    };
 
     return (
         <Router>

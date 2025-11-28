@@ -40,9 +40,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests((requests) -> requests
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/calculator/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/calculator/presets/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/calculator/presets/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/calculator/presets/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/calculator/full-caliber", "/api/calculator/sub-caliber", "/api/calculator/heat", "/api/calculator/he", "/api/calculator/overpressure", "/api/calculator/mass").permitAll()
                         .anyRequest().authenticated()
                 );
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

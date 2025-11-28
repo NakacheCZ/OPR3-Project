@@ -6,6 +6,7 @@ import type { SelectChangeEvent } from '@mui/material/Select';
 import CalculationHistoryFooter from './CalculationHistoryFooter';
 import '../App.css';
 import api from '../api';
+import { jwtDecode } from 'jwt-decode';
 
 interface HePreset {
     id: number;
@@ -203,18 +204,24 @@ export default function HighExplosivePage() {
             });
             setHeatOverpressure(overpressureData.result?.toFixed(2) ?? '');
 
-            await api.post('http://localhost:8080/api/calculator/save-calculation-history', {
-                timestamp: new Date().toISOString(),
-                parameters: JSON.stringify({ explosiveMass, diameter, angleOfImpact: angle, coefficient, efficiency, explosiveType: heatExplosiveType }),
-                calculationType: 'HEAT Penetration',
-                result: currentData.result
-            });
-            await api.post('http://localhost:8080/api/calculator/save-calculation-history', {
-                timestamp: new Date().toISOString(),
-                parameters: JSON.stringify({ explosiveMass, explosiveType: heatExplosiveType }),
-                calculationType: 'HEAT Overpressure',
-                result: overpressureData.result
-            });
+            const token = localStorage.getItem('token');
+            if (token) {
+                const decodedToken: { sub: string } = jwtDecode(token);
+                if (decodedToken.sub !== 'guest') {
+                    await api.post('http://localhost:8080/api/calculator/save-calculation-history', {
+                        timestamp: new Date().toISOString(),
+                        parameters: JSON.stringify({ explosiveMass, diameter, angleOfImpact: angle, coefficient, efficiency, explosiveType: heatExplosiveType }),
+                        calculationType: 'HEAT Penetration',
+                        result: currentData.result
+                    });
+                    await api.post('http://localhost:8080/api/calculator/save-calculation-history', {
+                        timestamp: new Date().toISOString(),
+                        parameters: JSON.stringify({ explosiveMass, explosiveType: heatExplosiveType }),
+                        calculationType: 'HEAT Overpressure',
+                        result: overpressureData.result
+                    });
+                }
+            }
             fetchHistory();
         } catch (error: any) {
             setError(error.message || 'An error occurred during HEAT calculation.');
@@ -231,12 +238,18 @@ export default function HighExplosivePage() {
             const data = await api.post<any>('http://localhost:8080/api/calculator/he', requestData);
             setHeResult(data.result?.toFixed(2) ?? '');
 
-            await api.post('http://localhost:8080/api/calculator/save-calculation-history', {
-                timestamp: new Date().toISOString(),
-                parameters: JSON.stringify({ explosiveMass: heExplosiveMass, explosiveType: heExplosiveType }),
-                calculationType: 'HE Overpressure',
-                result: data.result
-            });
+            const token = localStorage.getItem('token');
+            if (token) {
+                const decodedToken: { sub: string } = jwtDecode(token);
+                if (decodedToken.sub !== 'guest') {
+                    await api.post('http://localhost:8080/api/calculator/save-calculation-history', {
+                        timestamp: new Date().toISOString(),
+                        parameters: JSON.stringify({ explosiveMass: heExplosiveMass, explosiveType: heExplosiveType }),
+                        calculationType: 'HE Overpressure',
+                        result: data.result
+                    });
+                }
+            }
             fetchHistory();
         } catch (error: any) {
             setError(error.message || 'An error occurred during HE calculation.');

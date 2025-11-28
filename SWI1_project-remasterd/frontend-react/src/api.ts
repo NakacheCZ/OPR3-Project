@@ -1,8 +1,16 @@
+let accessToken = '';
+
+export const setAccessToken = (token: string) => {
+    accessToken = token;
+};
+
+export const getAccessToken = () => accessToken;
+
 const api = {
     async fetch(url: string, options: RequestInit = {}): Promise<Response> {
-        const token = localStorage.getItem('token');
-
         const headers = new Headers(options.headers || {});
+        const token = getAccessToken();
+
         if (token) {
             headers.append('Authorization', `Bearer ${token}`);
         }
@@ -10,10 +18,30 @@ const api = {
             headers.append('Content-Type', 'application/json');
         }
 
-        const response = await fetch(url, {
-            ...options,
-            headers,
-        });
+        let response = await fetch(url, { ...options, headers, credentials: 'include' });
+
+        if (response.status === 401 && !headers.has('X-Retry')) {
+            try {
+                const refreshResponse = await fetch('http://localhost:8080/api/auth/refresh', {
+                    method: 'POST',
+                    credentials: 'include',
+                });
+
+                if (refreshResponse.ok) {
+                    const { token: newToken } = await refreshResponse.json();
+                    setAccessToken(newToken);
+                    headers.set('Authorization', `Bearer ${newToken}`);
+                    
+                    const retryOptions = { ...options, headers };
+                    headers.set('X-Retry', 'true');
+                    response = await fetch(url, { ...retryOptions, headers });
+                } else {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                window.location.href = '/login';
+            }
+        }
 
         if (!response.ok) {
             const errorText = await response.text();
