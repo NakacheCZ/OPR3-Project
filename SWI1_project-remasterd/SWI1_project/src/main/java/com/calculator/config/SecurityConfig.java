@@ -40,6 +40,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests((requests) -> requests
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/calculator/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/calculator/presets/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/calculator/presets/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/calculator/presets/**").authenticated()
                         .anyRequest().authenticated()
                 );
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

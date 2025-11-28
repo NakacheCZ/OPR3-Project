@@ -27,7 +27,6 @@ public class SubCaliberPreset {
     private String material;
     private Double range;
     private Long userId;
-    private boolean basePreset;
 
     public Long getId() {
         return id;
@@ -132,13 +131,5 @@ public class SubCaliberPreset {
 
     public void setUserId(Long userId) {
         this.userId = userId;
-    }
-
-    public boolean isBasePreset() {
-        return basePreset;
-    }
-
-    public void setBasePreset(boolean basePreset) {
-        this.basePreset = basePreset;
     }
 }

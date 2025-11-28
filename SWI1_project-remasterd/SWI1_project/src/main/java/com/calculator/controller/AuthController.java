@@ -1,12 +1,11 @@
 package com.calculator.controller;
 
 import com.calculator.config.JwtTokenProvider;
-import com.calculator.entity.Role;
 import com.calculator.entity.User;
 import com.calculator.models.LoginDto;
 import com.calculator.models.SignUpDto;
-import com.calculator.repository.RoleRepository;
 import com.calculator.repository.UserRepository;
+import com.calculator.service.PresetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collections;
 import java.util.Map;
 
 @RestController
@@ -36,13 +34,13 @@ public class AuthController {
     private UserRepository userRepository;
 
     @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
     private JwtTokenProvider tokenProvider;
+
+    @Autowired
+    private PresetService presetService;
 
     @PostMapping("/signin")
     public ResponseEntity<Map<String, String>> authenticateUser(@RequestBody LoginDto loginDto) {
@@ -63,11 +61,11 @@ public class AuthController {
         User user = new User();
         user.setUsername(signUpDto.getUsername());
         user.setPassword(passwordEncoder.encode(signUpDto.getPassword()));
+        user.setAdmin(false);
 
-        Role roles = roleRepository.findByName("ROLE_USER").get();
-        user.setRoles(Collections.singleton(roles));
+        User newUser = userRepository.save(user);
 
-        userRepository.save(user);
+        presetService.copyBasePresetsToUser(newUser);
 
         // Authenticate and generate token for the new user
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(

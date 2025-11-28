@@ -24,5 +24,4 @@ public class HePreset {
     private Double diameter;        // mm
     private Double explosiveMass;   // kg
     private Long userId;
-    private boolean basePreset;
 }

@@ -13,6 +13,7 @@ import Layout from './components/Layout';
 import LoginPage from './components/LoginPage';
 import SignupPage from './components/SignupPage';
 import { jwtDecode } from 'jwt-decode';
+import api from './api';
 
 function MainPage() {
     const navigate = useNavigate();
@@ -91,10 +92,29 @@ export default function App() {
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
-            const decodedToken: { sub: string } = jwtDecode(token);
-            setUsername(decodedToken.sub);
+            try {
+                const decodedToken: { sub: string } = jwtDecode(token);
+                setUsername(decodedToken.sub);
+            } catch (error) {
+                console.error("Invalid token:", error);
+                localStorage.removeItem('token'); // Clear invalid token
+                loginAsGuest();
+            }
+        } else {
+            loginAsGuest();
         }
     }, []);
+
+    const loginAsGuest = async () => {
+        try {
+            const response = await api.post<{ token: string }>('http://localhost:8080/api/auth/signin', { username: 'guest', password: 'guest' });
+            localStorage.setItem('token', response.token);
+            const decodedToken: { sub: string } = jwtDecode(response.token);
+            setUsername(decodedToken.sub);
+        } catch (error) {
+            console.error("Failed to log in as guest:", error);
+        }
+    };
 
     return (
         <Router>
@@ -104,7 +124,7 @@ export default function App() {
                 <Route path="/sub-caliber" element={<Layout title="Sub Caliber" username={username}><SubCaliberPage /></Layout>} />
                 <Route path="/high-explosive" element={<Layout title="High Explosive" username={username}><HighExplosivePage /></Layout>} />
                 <Route path="/info" element={<Layout title="Info" username={username}><InfoPage /></Layout>} />
-                <Route path="/shells" element={<Layout title="Presets" username={username}><ShellPresets /></Layout>} />
+                <Route path="/shells" element={<Layout title="Presets" username={username}><ShellPresets username={username} /></Layout>} />
                 <Route path="/login" element={<Layout title="Login" username={username}><LoginPage /></Layout>} />
                 <Route path="/signup" element={<Layout title="Sign Up" username={username}><SignupPage /></Layout>} />
             </Routes>

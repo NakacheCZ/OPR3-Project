@@ -26,5 +26,4 @@ public class HeatPreset {
     private Double efficiency;      // %
     private Double penetration;     // mm
     private Long userId;
-    private boolean basePreset;
 }

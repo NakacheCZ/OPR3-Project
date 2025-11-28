@@ -9,8 +9,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -27,11 +27,12 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() ->
                         new UsernameNotFoundException("User not found with username: " + username));
 
-        Set<GrantedAuthority> authorities = user
-                .getRoles()
-                .stream()
-                .map((role) -> new SimpleGrantedAuthority(role.getName()))
-                .collect(Collectors.toSet());
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        if (user.isAdmin()) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        } else {
+            authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+        }
 
         return new org.springframework.security.core.userdetails.User(user.getUsername(),
                 user.getPassword(),

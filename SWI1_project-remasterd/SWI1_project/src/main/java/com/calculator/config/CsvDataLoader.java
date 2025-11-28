@@ -5,12 +5,13 @@ import com.calculator.repository.*;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
 import jakarta.annotation.PostConstruct;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -27,12 +28,14 @@ public class CsvDataLoader {
     private final SubCaliberPresetRepository subCaliberPresetRepository;
     private final HeatPresetRepository heatPresetRepository;
     private final HePresetRepository hePresetRepository;
-    private final RoleRepository roleRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${app.csv-import.enabled:true}")
     private boolean csvImportEnabled;
 
     @PostConstruct
+    @Transactional
     public void loadAllData() {
         if (!csvImportEnabled) {
             log.info("CSV import is disabled");
@@ -41,58 +44,48 @@ public class CsvDataLoader {
 
         clearExistingData();
 
-
         try {
-
-            log.info("Starting CSV data import...");
-            loadRoles();
+            log.info("Starting data import...");
+            User adminUser = loadUsers();
             loadExplosiveTypes();
-            loadFullCaliberPresets();
-            loadSubCaliberPresets();
-            loadHeatPresets();
-            loadHePresets();
-            log.info("CSV data import completed successfully");
+            loadFullCaliberPresets(adminUser);
+            loadSubCaliberPresets(adminUser);
+            loadHeatPresets(adminUser);
+            loadHePresets(adminUser);
+            log.info("Data import completed successfully");
         } catch (Exception e) {
-            log.error("Error during CSV data import", e);
+            log.error("Error during data import", e);
         }
     }
 
     private void clearExistingData() {
         log.info("Clearing existing data from tables...");
-        try {
-            // Nejprve smažeme presety, které mají závislosti na explosive types
-            hePresetRepository.deleteAll();
-            heatPresetRepository.deleteAll();
-
-            // Pak smažeme ostatní presety
-            fullCaliberPresetRepository.deleteAll();
-            subCaliberPresetRepository.deleteAll();
-
-            // Nakonec smažeme explosive types
-            explosiveTypeRepository.deleteAll();
-
-            log.info("All existing data cleared successfully");
-        } catch (Exception e) {
-            log.error("Error while clearing existing data", e);
-            throw e; // Přehodíme výjimku, aby se zastavilo načítání nových dat
-        }
+        hePresetRepository.deleteAll();
+        heatPresetRepository.deleteAll();
+        fullCaliberPresetRepository.deleteAll();
+        subCaliberPresetRepository.deleteAll();
+        explosiveTypeRepository.deleteAll();
+        userRepository.deleteAll();
+        log.info("All existing data cleared successfully");
     }
 
-    private void loadRoles() {
-        log.info("Loading Roles...");
-        if (roleRepository.findByName("ROLE_USER").isEmpty()) {
-            Role userRole = new Role();
-            userRole.setName("ROLE_USER");
-            roleRepository.save(userRole);
-        }
-        if (roleRepository.findByName("ROLE_ADMIN").isEmpty()) {
-            Role adminRole = new Role();
-            adminRole.setName("ROLE_ADMIN");
-            roleRepository.save(adminRole);
-        }
-        log.info("Roles loaded.");
-    }
+    private User loadUsers() {
+        log.info("Loading Users...");
+        User admin = new User();
+        admin.setUsername("admin");
+        admin.setPassword(passwordEncoder.encode("admin"));
+        admin.setAdmin(true);
+        userRepository.save(admin);
 
+        User guest = new User();
+        guest.setUsername("guest");
+        guest.setPassword(passwordEncoder.encode("guest"));
+        guest.setAdmin(false);
+        userRepository.save(guest);
+        
+        log.info("Users loaded.");
+        return admin;
+    }
 
     private void loadExplosiveTypes() throws IOException, CsvValidationException {
         log.info("Loading Explosive Types...");
@@ -119,7 +112,7 @@ public class CsvDataLoader {
         }
     }
 
-    private void loadFullCaliberPresets() throws IOException, CsvValidationException {
+    private void loadFullCaliberPresets(User adminUser) throws IOException, CsvValidationException {
         log.info("Loading Full Caliber presets...");
         ClassPathResource resource = new ClassPathResource("data/FullCaliberShellPresets.csv");
         try (CSVReader reader = new CSVReader(new InputStreamReader(resource.getInputStream()))) {
@@ -138,6 +131,7 @@ public class CsvDataLoader {
                     preset.setThicknessExponent(Double.parseDouble(line[6]));
                     preset.setScaleExponent(Double.parseDouble(line[7]));
                     preset.setRange(Double.parseDouble(line[8]));
+                    preset.setUserId(adminUser.getId());
                     presets.add(preset);
                 } catch (Exception e) {
                     log.warn("Error parsing Full Caliber preset: {}", String.join(",", line), e);
@@ -148,7 +142,7 @@ public class CsvDataLoader {
         }
     }
 
-    private void loadSubCaliberPresets() throws IOException, CsvValidationException {
+    private void loadSubCaliberPresets(User adminUser) throws IOException, CsvValidationException {
         log.info("Loading Sub-Caliber presets...");
         ClassPathResource resource = new ClassPathResource("data/SubCaliberShellPresets.csv");
         try (CSVReader reader = new CSVReader(new InputStreamReader(resource.getInputStream()))) {
@@ -165,6 +159,7 @@ public class CsvDataLoader {
                     preset.setDensityPenetrator(Double.parseDouble(line[4]));
                     preset.setHardnessPenetrator(Double.parseDouble(line[5]));
                     preset.setVelocity(Double.parseDouble(line[6]));
+                    preset.setUserId(adminUser.getId());
                     presets.add(preset);
                 } catch (Exception e) {
                     log.warn("Error parsing Sub-Caliber preset: {}", String.join(",", line), e);
@@ -175,7 +170,7 @@ public class CsvDataLoader {
         }
     }
 
-    private void loadHeatPresets() throws IOException, CsvValidationException {
+    private void loadHeatPresets(User adminUser) throws IOException, CsvValidationException {
         log.info("Loading HEAT presets...");
         ClassPathResource resource = new ClassPathResource("data/HEATShellPresets.csv");
         try (CSVReader reader = new CSVReader(new InputStreamReader(resource.getInputStream()))) {
@@ -198,6 +193,7 @@ public class CsvDataLoader {
                     preset.setExplosiveMass(Double.parseDouble(line[3]));
                     preset.setCoefficient(Double.parseDouble(line[4]));
                     preset.setEfficiency(Double.parseDouble(line[5]));
+                    preset.setUserId(adminUser.getId());
                     presets.add(preset);
                 } catch (Exception e) {
                     log.warn("Error parsing HEAT preset: {}", String.join(",", line), e);
@@ -208,7 +204,7 @@ public class CsvDataLoader {
         }
     }
 
-    private void loadHePresets() throws IOException, CsvValidationException {
+    private void loadHePresets(User adminUser) throws IOException, CsvValidationException {
         log.info("Loading HE presets...");
         ClassPathResource resource = new ClassPathResource("data/HEShellPresets.csv");
         try (CSVReader reader = new CSVReader(new InputStreamReader(resource.getInputStream()))) {
@@ -229,6 +225,7 @@ public class CsvDataLoader {
                     preset.setExplosiveType(explosiveType);
                     preset.setDiameter(Double.parseDouble(line[2]));
                     preset.setExplosiveMass(Double.parseDouble(line[3]));
+                    preset.setUserId(adminUser.getId());
                     presets.add(preset);
                 } catch (Exception e) {
                     log.warn("Error parsing HE preset: {}", String.join(",", line), e);

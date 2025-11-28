@@ -12,7 +12,14 @@ export default function Header({ title, username }: HeaderProps) {
     const navigate = useNavigate();
 
     const handleUserClick = () => {
-        navigate('/login');
+        if (!username || username === 'guest') {
+            navigate('/login');
+        }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        window.location.href = '/';
     };
 
     const handleTitleClick = () => {
@@ -44,12 +51,24 @@ export default function Header({ title, username }: HeaderProps) {
                 </div>
 
                 {/* Right Side: User Info */}
-                <div 
-                    style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} 
-                    onClick={handleUserClick}
-                >
-                    <PersonIcon size={32} />
-                    <span className="text-white ml-2">{username || 'Guest'}</span>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div
+                        style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                        onClick={handleUserClick}
+                    >
+                        <PersonIcon size={32} />
+                        <span className="text-white ml-2">{username || 'Guest'}</span>
+                    </div>
+                    {username && username !== 'guest' && (
+                        <Button
+                            variant="outlined"
+                            color="secondary"
+                            onClick={handleLogout}
+                            style={{ marginLeft: '1rem' }}
+                        >
+                            Logout
+                        </Button>
+                    )}
                 </div>
             </div>
         </header>
